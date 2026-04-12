@@ -194,8 +194,6 @@ docker compose up -d --build
 
 确保域名解析已配置，然后 Nginx 会自动处理请求。
 
-访问：`http://c.ningduhr.com/admin/` 进入管理后台
-
 ## API 文档
 
 启动服务后访问：
