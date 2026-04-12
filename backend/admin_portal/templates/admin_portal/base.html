@@ -1,0 +1,128 @@
+{% load static %}
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>管理后台</title>
+  <link rel="stylesheet" href="{% static 'admin_portal/styles.css' %}" />
+</head>
+<body class="bg-gray-50">
+  <div class="zy-layout">
+    <header class="zy-header">
+      <div class="zy-header-left">
+        <button id="zy-mobile-menu-btn" class="zy-mobile-menu-btn">☰</button>
+        <div class="zy-logo">
+          <div class="zy-logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12l9-9 9 9"></path>
+              <path d="M9 21V9h6v12"></path>
+            </svg>
+          </div>
+          <span class="zy-logo-text">家政后台</span>
+        </div>
+        <div id="zy-header-breadcrumb" class="zy-header-breadcrumb"></div>
+      </div>
+      <div class="zy-header-right">
+        <button id="zy-btn-fullscreen" class="zy-header-btn" title="全屏">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+            <path d="M16 3h3a2 2 0 0 1 2 2v3"></path>
+            <path d="M8 21H5a2 2 0 0 1-2-2v-3"></path>
+            <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+          </svg>
+        </button>
+        <button id="zy-btn-theme" class="zy-header-btn" title="切换主题">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+          </svg>
+        </button>
+        <div class="zy-user-dropdown">
+          <button id="zy-user-btn" class="zy-user-btn">
+            <div class="zy-avatar">
+              <img id="user-avatar-img" class="hidden" alt="avatar" />
+              <span id="user-avatar-placeholder">U</span>
+            </div>
+            <span id="current-user-name">管理员</span>
+          </button>
+          <div class="zy-user-menu">
+            <div class="zy-user-info">
+              <div class="zy-user-name" id="current-user-name-menu">管理员</div>
+              <div class="zy-user-role">系统管理员</div>
+            </div>
+            <div class="zy-user-divider"></div>
+            <a class="zy-user-menu-item" href="/admin/profile/">个人资料</a>
+            <a class="zy-user-menu-item" href="/admin/change-password/">修改密码</a>
+            <button id="btn-logout" class="zy-user-menu-item">退出登录</button>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div id="zy-mobile-sidebar-overlay" class="zy-mobile-sidebar-overlay"></div>
+    <div class="zy-main">
+      <aside class="zy-sidebar">
+        <nav class="zy-nav">
+          <div class="zy-nav-section">
+            <a class="zy-nav-item" data-page="dashboard" href="/admin/dashboard/">系统首页</a>
+          </div>
+          <div class="zy-nav-section">
+            <div class="zy-nav-section-title zy-nav-section-toggle">
+              业务管理
+              <span class="zy-nav-arrow">‹</span>
+            </div>
+            <div class="zy-nav-section-content expanded">
+              <a class="zy-nav-item" data-page="categories" href="/admin/categories/">分类管理</a>
+              <a class="zy-nav-item" data-page="listings" href="/admin/listings/">服务管理</a>
+              <a class="zy-nav-item" data-page="technicians" href="/admin/technicians/">技师认证</a>
+              <a class="zy-nav-item" data-page="banners" href="/admin/banners/">轮播管理</a>
+              <a class="zy-nav-item" data-page="hot_services" href="/admin/hot-services/">热门服务</a>
+            </div>
+          </div>
+          <div class="zy-nav-section">
+            <div class="zy-nav-section-title zy-nav-section-toggle">
+              用户管理
+              <span class="zy-nav-arrow">‹</span>
+            </div>
+            <div class="zy-nav-section-content expanded">
+              <a class="zy-nav-item" data-page="registered_users" href="/admin/registered-users/">会员列表</a>
+              <a class="zy-nav-item" data-page="admin_users" href="/admin/admin-users/">管理用户</a>
+            </div>
+          </div>
+          <div class="zy-nav-section">
+            <div class="zy-nav-section-title zy-nav-section-toggle">
+              账号设置
+              <span class="zy-nav-arrow">‹</span>
+            </div>
+            <div class="zy-nav-section-content">
+              <a class="zy-nav-item" data-page="change_password" href="/admin/change-password/">修改密码</a>
+              <a class="zy-nav-item" data-page="profile" href="/admin/profile/">个人资料</a>
+            </div>
+          </div>
+        </nav>
+      </aside>
+      <main class="zy-content">
+        <div class="zy-page-content">
+          <div id="admin-page-root" data-page-key="{{ page_key }}"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>window.__ADMIN_PAGE_KEY__ = "{{ page_key|default:'' }}";</script>
+  <script src="{% static 'admin_portal/js/admin_api.js' %}"></script>
+  <script src="{% static 'admin_portal/js/lib/chart.min.js' %}"></script>
+  <script src="{% static 'admin_portal/js/admin_portal.js' %}"></script>
+  {% if page_key == "dashboard" %}<script src="{% static 'admin_portal/js/pages/dashboard.js' %}"></script>{% endif %}
+  {% if page_key == "categories" %}<script src="{% static 'admin_portal/js/pages/categories.js' %}"></script>{% endif %}
+  {% if page_key == "technicians" %}<script src="{% static 'admin_portal/js/pages/technicians.js' %}"></script>{% endif %}
+  {% if page_key == "listings" %}<script src="{% static 'admin_portal/js/pages/listings.js' %}"></script>{% endif %}
+  {% if page_key == "registered_users" %}<script src="{% static 'admin_portal/js/pages/registered_users.js' %}"></script>{% endif %}
+  {% if page_key == "admin_users" %}<script src="{% static 'admin_portal/js/pages/admin_users.js' %}"></script>{% endif %}
+  {% if page_key == "menus" %}<script src="{% static 'admin_portal/js/pages/menus.js' %}"></script>{% endif %}
+  {% if page_key == "banners" %}<script src="{% static 'admin_portal/js/pages/banners.js' %}"></script>{% endif %}
+  {% if page_key == "hot_services" %}<script src="{% static 'admin_portal/js/pages/hot_services.js' %}"></script>{% endif %}
+  {% if page_key == "change_password" %}<script src="{% static 'admin_portal/js/pages/change_password.js' %}"></script>{% endif %}
+  {% if page_key == "profile" %}<script src="{% static 'admin_portal/js/pages/profile.js' %}"></script>{% endif %}
+</body>
+</html>

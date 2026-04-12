@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{# 轻量注入 daisyUI + 自定义 CSS：尽量不重写 Django admin 结构 #}
+{% block extrahead %}
+  <script>
+    document.documentElement.setAttribute('data-theme', 'light');
+  </script>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <link rel="stylesheet" href="{% static 'admin_theme/admin_theme.css' %}">
+{% endblock %}
+
+{% block branding %}
+  <div id="site-name">
+    <a href="{% url 'admin:index' %}">{{ site_header|default:"虔诚家政管理平台" }}</a>
+  </div>
+{% endblock %}
+

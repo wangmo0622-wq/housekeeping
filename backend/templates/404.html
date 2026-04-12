@@ -1,0 +1,299 @@
+{% load static %}
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>页面未找到 - 404</title>
+  <link rel="stylesheet" href="{% static 'admin_portal/styles.css' %}" />
+  <style>
+    .error-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .error-page,
+    .error-page * {
+      box-sizing: border-box;
+    }
+
+    .error-bg-shapes {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .error-bg-shapes::before,
+    .error-bg-shapes::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .error-bg-shapes::before {
+      width: 400px;
+      height: 400px;
+      top: -100px;
+      right: -100px;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .error-bg-shapes::after {
+      width: 300px;
+      height: 300px;
+      bottom: -50px;
+      left: -50px;
+      animation: float 8s ease-in-out infinite reverse;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(5deg); }
+    }
+
+    .error-small-circle {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      top: 20%;
+      left: 10%;
+      animation: float 7s ease-in-out infinite;
+    }
+
+    .error-small-circle-2 {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      bottom: 25%;
+      right: 15%;
+      animation: float 5s ease-in-out infinite;
+    }
+
+    .error-card {
+      width: 100%;
+      max-width: 480px;
+      background: rgba(255, 255, 255, 0.95);
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+      position: relative;
+      z-index: 10;
+      animation: slideUp 0.5s ease-out;
+      text-align: center;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .error-header {
+      padding: 50px 40px 30px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+    }
+
+    .error-icon {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+    }
+
+    .error-icon svg {
+      width: 50px;
+      height: 50px;
+      color: white;
+    }
+
+    .error-code {
+      font-size: 72px;
+      font-weight: 800;
+      color: #667eea;
+      line-height: 1;
+      margin-bottom: 8px;
+      text-shadow: 2px 2px 4px rgba(102, 126, 234, 0.2);
+    }
+
+    .error-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 12px;
+    }
+
+    .error-message {
+      font-size: 15px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .error-body {
+      padding: 30px 40px 40px;
+    }
+
+    .error-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .error-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+
+    .error-btn-primary {
+      color: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      border: none;
+    }
+
+    .error-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+    }
+
+    .error-btn-secondary {
+      color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+      border: 2px solid rgba(102, 126, 234, 0.2);
+    }
+
+    .error-btn-secondary:hover {
+      background: rgba(102, 126, 234, 0.15);
+      border-color: rgba(102, 126, 234, 0.3);
+    }
+
+    .error-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .error-footer {
+      text-align: center;
+      padding: 20px 40px;
+      border-top: 1px solid rgba(102, 126, 234, 0.1);
+      background: rgba(102, 126, 234, 0.03);
+    }
+
+    .error-footer-text {
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 0;
+    }
+
+    @media (max-width: 480px) {
+      .error-card {
+        max-width: 100%;
+        border-radius: 20px;
+      }
+      .error-header {
+        padding: 40px 24px 24px;
+      }
+      .error-body {
+        padding: 24px;
+      }
+      .error-code {
+        font-size: 56px;
+      }
+      .error-icon {
+        width: 80px;
+        height: 80px;
+      }
+      .error-icon svg {
+        width: 40px;
+        height: 40px;
+      }
+      .error-title {
+        font-size: 20px;
+      }
+      .error-actions {
+        flex-direction: column;
+      }
+      .error-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="error-page">
+    <div class="error-bg-shapes">
+      <div class="error-small-circle"></div>
+      <div class="error-small-circle-2"></div>
+    </div>
+    <div class="error-card">
+      <div class="error-header">
+        <div class="error-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+          </svg>
+        </div>
+        <div class="error-code">404</div>
+        <h1 class="error-title">页面未找到</h1>
+        <p class="error-message">抱歉，您访问的页面不存在或已被移除<br />请检查 URL 是否正确</p>
+      </div>
+      <div class="error-body">
+        <div class="error-actions">
+          <a href="/admin/dashboard/" class="error-btn error-btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10" />
+            </svg>
+            返回首页
+          </a>
+          <a href="javascript:history.back()" class="error-btn error-btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            返回上一页
+          </a>
+        </div>
+      </div>
+      <div class="error-footer">
+        <p class="error-footer-text">如果问题持续存在，请联系管理员</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
