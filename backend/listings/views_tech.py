@@ -273,14 +273,14 @@ class TechnicianSubmitVerificationView(APIView):
         if license_files:
             from accounts.models import TechnicianLicense
             
-            # 检查执照文件数量限制（最多5个）
+            # 检查执照文件数量限制（最多6个）
             current_license_count = profile.licenses.count()
             new_license_count = len(license_files)
             total_count = current_license_count + new_license_count
             
-            if total_count > 5:
+            if total_count > 6:
                 return Response({
-                    "detail": f"执照文件数量超过限制，最多只能上传5个，当前已有{current_license_count}个"
+                    "detail": f"执照文件数量超过限制，最多只能上传6个，当前已有{current_license_count}个"
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             for license_file in license_files:

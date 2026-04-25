@@ -1,0 +1,104 @@
+/* 轻量覆盖 Django admin，与主站虔诚家政后台视觉协调（DaisyUI tokens + 圆角与层次） */
+
+:root {
+  --admin-bg: hsl(var(--b1));
+  --admin-surface: hsl(var(--b2));
+  --admin-border: hsl(var(--b3));
+  --admin-text: hsl(var(--bc));
+  --admin-primary: hsl(var(--p));
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+html,
+body {
+  background: var(--admin-bg) !important;
+  color: var(--admin-text) !important;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* header / sidebar */
+#header,
+#nav-sidebar {
+  background: var(--admin-surface) !important;
+  border-color: var(--admin-border) !important;
+}
+
+/* content padding */
+#content {
+  padding: 1rem !important;
+}
+
+/* modules */
+.module,
+.grp {
+  background: var(--admin-surface) !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid var(--admin-border) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden;
+}
+
+.module h2,
+.grp h2 {
+  color: var(--admin-text) !important;
+}
+
+/* tables */
+.results,
+.changelist-form,
+.filtered {
+  color: var(--admin-text) !important;
+}
+
+.results table,
+.filtered table {
+  border-color: var(--admin-border) !important;
+}
+
+.results th,
+.filtered th {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border-bottom: 1px solid var(--admin-border) !important;
+  font-weight: 600 !important;
+}
+
+.results td,
+.filtered td {
+  border-bottom: 1px solid rgba(0, 0, 0, 0) !important;
+}
+
+/* buttons / links */
+a:link,
+a:visited {
+  color: var(--admin-primary) !important;
+}
+
+.button,
+.submit-row input,
+.submit-row button,
+button,
+input[type="submit"],
+input[type="button"] {
+  background: var(--admin-primary) !important;
+  border-color: var(--admin-primary) !important;
+  color: var(--p-content) !important;
+  border-radius: 0.75rem !important;
+}
+
+/* form controls */
+input[type="text"],
+input[type="number"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  background: var(--admin-surface) !important;
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.5rem 0.75rem !important;
+}
+

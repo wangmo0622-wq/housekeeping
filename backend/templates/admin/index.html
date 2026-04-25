@@ -1,0 +1,123 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/css/dashboard.css' %}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 解决 Tailwind 与 Django Admin 样式冲突问题 */
+    #content-main, #content-related { float: none; width: 100%; }
+    .dashboard-panel { @apply bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6; }
+    .dashboard-header { @apply px-6 py-4 border-b border-slate-100 bg-slate-50 font-semibold text-slate-800 flex items-center gap-2; }
+    .app-list-module { @apply mb-6 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden; }
+    .app-list-module caption { @apply bg-indigo-50 text-indigo-700 px-6 py-3 font-semibold text-sm rounded-t-xl text-left border-b border-indigo-100; }
+    .app-list-module table { @apply w-full; }
+    .app-list-module th, .app-list-module td { @apply px-6 py-3 border-b border-slate-100 text-sm; }
+    .app-list-module tr:last-child th, .app-list-module tr:last-child td { @apply border-0; }
+    .app-list-module a { @apply text-indigo-600 hover:text-indigo-800 transition-colors font-medium; }
+    
+    /* Stats grid */
+    .stats-grid { @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8; }
+    .stat-card { @apply bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col hover:shadow-md transition-all hover:-translate-y-1; }
+    .stat-title { @apply text-slate-500 text-xs font-medium uppercase tracking-wider mb-2; }
+    .stat-value { @apply text-3xl font-bold text-slate-800; }
+    .stat-desc { @apply text-xs text-slate-400 mt-2; }
+    .stat-icon { @apply w-10 h-10 rounded-lg flex items-center justify-center mb-4; }
+  </style>
+{% endblock %}
+
+{% block coltype %}colMS{% endblock %}
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon bg-blue-50 text-blue-600">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+    </div>
+    <div class="stat-title">平台技师总数</div>
+    <div class="stat-value">总览</div>
+    <div class="stat-desc">所有机构与个人的技师汇总</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon bg-emerald-50 text-emerald-600">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    </div>
+    <div class="stat-title">待审核服务</div>
+    <div class="stat-value">监控</div>
+    <div class="stat-desc">需管理员审核的服务发布</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon bg-purple-50 text-purple-600">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+    </div>
+    <div class="stat-title">入驻机构</div>
+    <div class="stat-value">概览</div>
+    <div class="stat-desc">管理平台协同运营机构</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon bg-amber-50 text-amber-600">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+    </div>
+    <div class="stat-title">快捷入口</div>
+    <div class="stat-value">运营</div>
+    <div class="stat-desc">点击下方模块直接管理</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <div class="lg:col-span-2">
+    <div id="content-main">
+      {% include "admin/app_list.html" with app_list=app_list show_changenear=True %}
+    </div>
+  </div>
+  
+  <div class="lg:col-span-1">
+    {% block sidebar %}
+    <div class="dashboard-panel">
+      <div class="dashboard-header">
+        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        {% translate 'Recent actions' %}
+      </div>
+      <div class="p-0">
+        {% load log %}
+        {% get_admin_log 10 as admin_log for_user user %}
+        {% if not admin_log %}
+        <p class="p-6 text-sm text-slate-500 text-center">{% translate 'None available' %}</p>
+        {% else %}
+        <ul class="divide-y divide-slate-100">
+        {% for entry in admin_log %}
+        <li class="p-4 hover:bg-slate-50 transition-colors">
+            <div class="flex items-start gap-3">
+              {% if entry.is_addition %}
+              <div class="mt-1 w-2 h-2 rounded-full bg-emerald-500 shrink-0"></div>
+              {% elif entry.is_change %}
+              <div class="mt-1 w-2 h-2 rounded-full bg-blue-500 shrink-0"></div>
+              {% elif entry.is_deletion %}
+              <div class="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
+              {% endif %}
+              <div>
+                {% if entry.is_deletion or not entry.url %}
+                    <span class="text-sm font-medium text-slate-800">{{ entry.object_repr }}</span>
+                {% else %}
+                    <a href="{{ entry.url }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">{{ entry.object_repr }}</a>
+                {% endif %}
+                <br>
+                {% if entry.content_type %}
+                    <span class="text-xs text-slate-500">{% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}</span>
+                {% else %}
+                    <span class="text-xs text-slate-500">{% translate 'Unknown content' %}</span>
+                {% endif %}
+              </div>
+            </div>
+        </li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+    {% endblock %}
+  </div>
+</div>
+{% endblock %}

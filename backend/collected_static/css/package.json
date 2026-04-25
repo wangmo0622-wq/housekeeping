@@ -1,0 +1,11 @@
+{
+  "name": "jiazheng-static-css",
+  "private": true,
+  "scripts": {
+    "build:org-portal": "tailwindcss -i organization_portal.input.css -o organization_portal.css --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "tailwindcss": "^4.2.2"
+  }
+}

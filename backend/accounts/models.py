@@ -174,3 +174,80 @@ class TechnicianVerification(models.Model):
         verbose_name = "技师认证记录"
         verbose_name_plural = "技师认证记录"
 
+
+class Organization(models.Model):
+    """
+    机构（企业）模型，用于管理和认证技师
+    """
+
+    class VerificationStatus(models.TextChoices):
+        UNINITIATED = "uninitiated", "未发起认证"
+        PENDING = "pending", "待审核"
+        APPROVED = "approved", "通过"
+        REJECTED = "rejected", "未通过"
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="organization")
+    
+    # 企业基本信息
+    company_name = models.CharField(max_length=128, verbose_name="企业名称")
+    business_license = models.FileField(upload_to="verification/organization/", blank=True, null=True, verbose_name="营业执照")
+    business_license_number = models.CharField(max_length=64, blank=True, verbose_name="营业执照号")
+    contact_person = models.CharField(max_length=64, verbose_name="联系人")
+    contact_phone = models.CharField(max_length=32, verbose_name="联系电话")
+    address = models.CharField(max_length=256, blank=True, verbose_name="企业地址")
+    
+    # 认证状态
+    verification_status = models.CharField(
+        max_length=16,
+        choices=VerificationStatus.choices,
+        default=VerificationStatus.UNINITIATED,
+        verbose_name="认证状态",
+    )
+    is_disabled = models.BooleanField(
+        default=False, verbose_name="禁用", help_text="禁用：公共端等同未通过"
+    )
+    
+    # 时间戳
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Organization<{self.company_name}>"
+
+    class Meta:
+        verbose_name = "机构"
+        verbose_name_plural = "机构"
+
+
+class OrganizationTechnician(models.Model):
+    """
+    机构管理的技师关联模型
+    """
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="technicians")
+    technician = models.ForeignKey(TechnicianProfile, on_delete=models.CASCADE, related_name="organizations")
+    
+    # 关联状态
+    class Status(models.TextChoices):
+        PENDING = "pending", "待确认"
+        ACTIVE = "active", "已关联"
+        INACTIVE = "inactive", "已解除"
+    
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+        verbose_name="关联状态",
+    )
+    
+    # 时间戳
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.organization.company_name} - {self.technician.user.username}"
+
+    class Meta:
+        verbose_name = "机构技师关联"
+        verbose_name_plural = "机构技师关联"
+        unique_together = ["organization", "technician"]
+

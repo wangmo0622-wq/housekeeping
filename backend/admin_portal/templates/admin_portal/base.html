@@ -5,7 +5,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>管理后台</title>
-  <link rel="stylesheet" href="{% static 'admin_portal/styles.css' %}" />
+  <link rel="stylesheet" href="{% static 'admin_portal/styles.css' %}?v=20260426" />
+  <link rel="stylesheet" href="{% static 'admin_portal/design-system.css' %}?v=20260426" />
+  <link rel="stylesheet" href="{% static 'css/organization_portal.css' %}?v=20260426" />
 </head>
 <body class="bg-gray-50">
   <div class="zy-layout">
@@ -71,10 +73,11 @@
               业务管理
               <span class="zy-nav-arrow">‹</span>
             </div>
-            <div class="zy-nav-section-content expanded">
+            <div class="zy-nav-section-content">
               <a class="zy-nav-item" data-page="categories" href="/admin/categories/">分类管理</a>
               <a class="zy-nav-item" data-page="listings" href="/admin/listings/">服务管理</a>
               <a class="zy-nav-item" data-page="technicians" href="/admin/technicians/">技师认证</a>
+              <a class="zy-nav-item" data-page="organizations" href="/admin/organizations/">机构管理</a>
               <a class="zy-nav-item" data-page="banners" href="/admin/banners/">轮播管理</a>
               <a class="zy-nav-item" data-page="hot_services" href="/admin/hot-services/">热门服务</a>
             </div>
@@ -84,9 +87,10 @@
               用户管理
               <span class="zy-nav-arrow">‹</span>
             </div>
-            <div class="zy-nav-section-content expanded">
+            <div class="zy-nav-section-content">
               <a class="zy-nav-item" data-page="registered_users" href="/admin/registered-users/">会员列表</a>
               <a class="zy-nav-item" data-page="admin_users" href="/admin/admin-users/">管理用户</a>
+              <a class="zy-nav-item" data-page="menus" href="/admin/menus/">菜单管理</a>
             </div>
           </div>
           <div class="zy-nav-section">
@@ -97,6 +101,8 @@
             <div class="zy-nav-section-content">
               <a class="zy-nav-item" data-page="change_password" href="/admin/change-password/">修改密码</a>
               <a class="zy-nav-item" data-page="profile" href="/admin/profile/">个人资料</a>
+              <a class="zy-nav-item" data-page="legal_terms" href="/admin/legal-terms/">服务协议</a>
+              <a class="zy-nav-item" data-page="legal_privacy" href="/admin/legal-privacy/">隐私政策</a>
             </div>
           </div>
         </nav>
@@ -110,19 +116,41 @@
   </div>
 
   <script>window.__ADMIN_PAGE_KEY__ = "{{ page_key|default:'' }}";</script>
-  <script src="{% static 'admin_portal/js/admin_api.js' %}"></script>
-  <script src="{% static 'admin_portal/js/lib/chart.min.js' %}"></script>
-  <script src="{% static 'admin_portal/js/admin_portal.js' %}"></script>
-  {% if page_key == "dashboard" %}<script src="{% static 'admin_portal/js/pages/dashboard.js' %}"></script>{% endif %}
-  {% if page_key == "categories" %}<script src="{% static 'admin_portal/js/pages/categories.js' %}"></script>{% endif %}
-  {% if page_key == "technicians" %}<script src="{% static 'admin_portal/js/pages/technicians.js' %}"></script>{% endif %}
-  {% if page_key == "listings" %}<script src="{% static 'admin_portal/js/pages/listings.js' %}"></script>{% endif %}
-  {% if page_key == "registered_users" %}<script src="{% static 'admin_portal/js/pages/registered_users.js' %}"></script>{% endif %}
-  {% if page_key == "admin_users" %}<script src="{% static 'admin_portal/js/pages/admin_users.js' %}"></script>{% endif %}
-  {% if page_key == "menus" %}<script src="{% static 'admin_portal/js/pages/menus.js' %}"></script>{% endif %}
-  {% if page_key == "banners" %}<script src="{% static 'admin_portal/js/pages/banners.js' %}"></script>{% endif %}
-  {% if page_key == "hot_services" %}<script src="{% static 'admin_portal/js/pages/hot_services.js' %}"></script>{% endif %}
-  {% if page_key == "change_password" %}<script src="{% static 'admin_portal/js/pages/change_password.js' %}"></script>{% endif %}
-  {% if page_key == "profile" %}<script src="{% static 'admin_portal/js/pages/profile.js' %}"></script>{% endif %}
+  <script src="{% static 'admin_portal/js/admin_api.js' %}?v=20260426"></script>
+  <script>
+    (function patchAdminAlertToToast() {
+      if (window.__adminAlertPatched) return;
+      window.__adminAlertPatched = true;
+      const nativeAlert = window.alert ? window.alert.bind(window) : null;
+      window.alert = function(msg) {
+        const text = String(msg || "").trim();
+        if (!text) return;
+        if (typeof showToast === "function") showToast(text, "error", 3200);
+        else if (nativeAlert) nativeAlert(text);
+      };
+    })();
+  </script>
+  <script src="{% static 'admin_portal/js/lib/chart.min.js' %}?v=20260425t"></script>
+  {% if page_key == "legal_docs" or page_key == "legal_terms" or page_key == "legal_privacy" %}
+    <link rel="stylesheet" href="{% static 'admin_portal/vendor/aieditor/style.css' %}?v=1.4.2" />
+    <script src="{% static 'admin_portal/vendor/aieditor/aieditor.umd.js' %}?v=1.4.2"></script>
+  {% endif %}
+  <script src="{% static 'admin_portal/js/admin_portal.js' %}?v=20260426"></script>
+  {% if page_key == "dashboard" %}<script src="{% static 'admin_portal/js/pages/dashboard.js' %}?v=20260425t"></script>{% endif %}
+  {% if page_key == "categories" %}<script src="{% static 'admin_portal/js/pages/categories.js' %}?v=20260425t"></script>{% endif %}
+  {% if page_key == "technicians" %}<script src="{% static 'admin_portal/js/pages/technicians.js' %}?v=20260426"></script>{% endif %}
+  {% if page_key == "organizations" %}<script src="{% static 'admin_portal/js/pages/organizations.js' %}?v=20260426"></script>{% endif %}
+  {% if page_key == "listings" %}<script src="{% static 'admin_portal/js/pages/listings.js' %}?v=20260426"></script>{% endif %}
+  {% if page_key == "registered_users" %}<script src="{% static 'admin_portal/js/pages/registered_users.js' %}?v=20260426"></script>{% endif %}
+  {% if page_key == "admin_users" %}<script src="{% static 'admin_portal/js/pages/admin_users.js' %}?v=20260426"></script>{% endif %}
+  {% if page_key == "menus" %}<script src="{% static 'admin_portal/js/pages/menus.js' %}?v=20260426"></script>{% endif %}
+  {% if page_key == "banners" %}<script src="{% static 'admin_portal/js/pages/banners.js' %}?v=20260426"></script>{% endif %}
+  {% if page_key == "hot_services" %}<script src="{% static 'admin_portal/js/pages/hot_services.js' %}?v=20260426"></script>{% endif %}
+  {% if page_key == "legal_docs" %}<script src="{% static 'admin_portal/js/pages/legal_docs.js' %}?v=20260426"></script>{% endif %}
+  {% if page_key == "legal_terms" %}<script src="{% static 'admin_portal/js/pages/legal_docs.js' %}?v=20260426"></script>{% endif %}
+  {% if page_key == "legal_privacy" %}<script src="{% static 'admin_portal/js/pages/legal_docs.js' %}?v=20260426"></script>{% endif %}
+  {% if page_key == "llm_providers" %}<script src="{% static 'admin_portal/js/pages/llm_providers.js' %}?v=20260426a"></script>{% endif %}
+  {% if page_key == "change_password" %}<script src="{% static 'admin_portal/js/pages/change_password.js' %}?v=20260426c"></script>{% endif %}
+  {% if page_key == "profile" %}<script src="{% static 'admin_portal/js/pages/profile.js' %}?v=20260426c"></script>{% endif %}
 </body>
 </html>

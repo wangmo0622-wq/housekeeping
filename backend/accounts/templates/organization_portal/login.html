@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>机构门户 - 登录注册</title>
+  <style>
+    :root {
+      --primary-50: #f0f9ff;
+      --primary-100: #e0f2fe;
+      --primary-200: #bae6fd;
+      --primary-500: #3b82f6;
+      --primary-600: #2563eb;
+      --primary-700: #1d4ed8;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #e0f7fa 0%, #f0f9ff 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 装饰元素 */
+    .decorative-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23f0f9ff'/%3E%3Cstop offset='100%25' stop-color='%23e0f7fa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23a)'/%3E%3C/svg%3E") no-repeat center center/cover;
+      z-index: -1;
+    }
+
+    .butterfly {
+      position: absolute;
+      left: 10%;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 400px;
+      height: 300px;
+      opacity: 0.7;
+      animation: float 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(-50%) rotate(0deg); }
+      50% { transform: translateY(-60%) rotate(5deg); }
+    }
+
+    .login-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 1000px;
+      gap: 48px;
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .left-section {
+      flex: 1;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 48px;
+      font-weight: 800;
+      color: var(--primary-600);
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }
+
+    .slogan {
+      font-size: 18px;
+      color: var(--primary-700);
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .right-section {
+      flex: 0.8;
+      max-width: 420px;
+    }
+
+    .login-card {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 25px 50px rgba(59, 130, 246, 0.1);
+      padding: 32px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card-header {
+      margin-bottom: 32px;
+    }
+
+    .card-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .card-subtitle {
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      background: #f8fafc;
+      padding: 6px;
+      border-radius: 12px;
+    }
+
+    .tab {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .tab:hover {
+      color: var(--primary-600);
+    }
+
+    .tab.active {
+      background: white;
+      color: var(--primary-600);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .form-input {
+      width: 100%;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 15px;
+      transition: all 0.3s ease;
+      background: #f8fafc;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary-500);
+      background: white;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-input::placeholder {
+      color: #94a3b8;
+    }
+
+    .form-input.input-invalid {
+      border-color: #f87171;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.12);
+    }
+
+    .input-with-icon {
+      position: relative;
+    }
+
+    .field-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+
+    .input-with-icon .form-input {
+      padding-left: 42px;
+    }
+
+    .password-field {
+      position: relative;
+    }
+
+    .password-field .form-input {
+      padding-right: 48px;
+    }
+
+    .pwd-toggle {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .pwd-toggle:hover {
+      color: var(--primary-600);
+      background: rgba(59, 130, 246, 0.08);
+    }
+
+    .pwd-toggle:focus-visible {
+      outline: 2px solid var(--primary-500);
+      outline-offset: 2px;
+    }
+
+    .pwd-toggle svg {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .field-hint {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .field-hint.warn {
+      color: #dc2626;
+    }
+
+    .submit-btn {
+      width: 100%;
+      border: none;
+      background: var(--primary-600);
+      color: white;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 8px;
+    }
+
+    .submit-btn:hover {
+      background: var(--primary-700);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .message {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+      line-height: 1.45;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.error {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .message.success {
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+    .org-toast-wrap {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .org-toast {
+      min-width: 240px;
+      max-width: 360px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      color: #0f172a;
+      padding: 10px 12px;
+      box-shadow: 0 12px 28px rgba(2, 6, 23, 0.14);
+      font-size: 13px;
+      line-height: 1.45;
+      opacity: 0;
+      transform: translateX(18px);
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .org-toast.show { opacity: 1; transform: translateX(0); }
+    .org-toast.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+    .org-toast.error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+    .org-toast.warning { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+    .org-toast.info { border-color: #bfdbfe; background: #eff6ff; color: #1e3a8a; }
+
+    .hint {
+      margin-top: 20px;
+      padding: 14px;
+      background: #f8fafc;
+      border-radius: 12px;
+      border-left: 4px solid var(--primary-500);
+    }
+
+    .hint p {
+      margin: 0;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* 与表单显隐共用 .hidden；密码图标切换仅控制 SVG */
+    .pwd-toggle .icon-eye.hidden,
+    .pwd-toggle .icon-eye-off.hidden {
+      display: none !important;
+    }
+
+    .footer-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .agreement-text {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+
+    .agreement-text a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    .agreement-text a:hover {
+      text-decoration: underline;
+    }
+
+    .footer-link a {
+      color: var(--primary-600);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+      .login-wrapper {
+        flex-direction: column;
+        text-align: center;
+        gap: 32px;
+      }
+
+      .left-section {
+        max-width: 100%;
+      }
+
+      .right-section {
+        max-width: 100%;
+      }
+
+      .login-card {
+        padding: 32px;
+      }
+
+      .butterfly {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="decorative-bg"></div>
+  
+  <!-- 蝴蝶装饰 -->
+  <div class="butterfly">
+    <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+      <path d="M200 20C250 20 300 60 350 120C360 140 370 170 350 200C320 240 270 260 200 260C130 260 80 240 50 200C30 170 40 140 50 120C100 60 150 20 200 20Z" fill="url(#butterfly-gradient)" opacity="0.6"/>
+      <defs>
+        <linearGradient id="butterfly-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#3b82f6"/>
+          <stop offset="100%" stop-color="#8b5cf6"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+
+  <div class="login-wrapper">
+    <div class="left-section">
+      <h1 class="logo">虔诚家政</h1>
+      <p class="slogan">专业家政服务管理平台</p>
+      <p class="slogan">让服务更贴心，管理更轻松</p>
+    </div>
+
+    <div class="right-section">
+      <div class="login-card">
+        <div class="card-header">
+          <h2 class="card-title">机构门户</h2>
+          <p class="card-subtitle">登录后管理您的技师和服务</p>
+        </div>
+
+        <div class="tabs">
+          <button id="tab-login" class="tab active" type="button">登录</button>
+          <button id="tab-register" class="tab" type="button">注册</button>
+        </div>
+
+        <form id="form-login" novalidate>
+          <div class="form-group">
+            <div class="input-with-icon">
+              <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+              <input id="login-phone" name="phone" class="form-input" type="tel" inputmode="numeric" maxlength="11" placeholder="11 位中国大陆手机号" autocomplete="tel" />
+            </div>
+            <p id="hint-login-phone" class="field-hint" aria-live="polite"></p>
+          </div>
+          <div class="form-group">
+            <div class="password-field input-with-icon">
+              <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V8a5 5 0 0 1 10 0v3"/></svg>
+              <input id="login-password" name="password" class="form-input" type="password" placeholder="请输入密码" autocomplete="current-password" minlength="1" />
+              <button type="button" class="pwd-toggle" id="toggle-login-password" aria-label="显示密码" title="显示/隐藏密码">
+                <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="icon-eye-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+            <p id="hint-login-password" class="field-hint" aria-live="polite"></p>
+          </div>
+          <button id="btn-login" class="submit-btn" type="submit">登录</button>
+        </form>
+
+        <form id="form-register" class="hidden" novalidate>
+          <div class="form-group">
+            <div class="input-with-icon">
+              <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+              <input id="register-phone" name="phone" class="form-input" type="tel" inputmode="numeric" maxlength="11" placeholder="11 位中国大陆手机号" autocomplete="tel" />
+            </div>
+            <p id="hint-register-phone" class="field-hint" aria-live="polite"></p>
+          </div>
+          <div class="form-group">
+            <div class="password-field input-with-icon">
+              <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V8a5 5 0 0 1 10 0v3"/></svg>
+              <input id="register-password" name="password" class="form-input" type="password" placeholder="至少 6 位，建议字母+数字" autocomplete="new-password" minlength="6" />
+              <button type="button" class="pwd-toggle" id="toggle-register-password" aria-label="显示密码" title="显示/隐藏密码">
+                <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="icon-eye-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+            <p id="hint-register-password" class="field-hint" aria-live="polite"></p>
+          </div>
+          <button id="btn-register" class="submit-btn" type="submit">注册</button>
+        </form>
+
+        <div id="msg" class="message hidden" role="alert"></div>
+        <div class="agreement-text">
+          登录即表示您已同意平台
+          <a href="/terms/" target="_blank" rel="noopener noreferrer">服务协议</a>
+          和
+          <a href="/privacy/" target="_blank" rel="noopener noreferrer">隐私政策</a>
+        </div>
+        <div class="footer-link">
+          <a href="/">返回首页</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "org_access_token";
+    const PHONE_RE = /^1[3-9]\d{9}$/;
+    const PASSWORD_MIN = 6;
+    const PASSWORD_MAX = 128;
+
+    const tabLogin = document.getElementById("tab-login");
+    const tabRegister = document.getElementById("tab-register");
+    const formLogin = document.getElementById("form-login");
+    const formRegister = document.getElementById("form-register");
+    const msgEl = document.getElementById("msg");
+
+    const loginPhone = document.getElementById("login-phone");
+    const loginPassword = document.getElementById("login-password");
+    const registerPhone = document.getElementById("register-phone");
+    const registerPassword = document.getElementById("register-password");
+    const hintLoginPhone = document.getElementById("hint-login-phone");
+    const hintRegisterPhone = document.getElementById("hint-register-phone");
+    const hintLoginPassword = document.getElementById("hint-login-password");
+    const hintRegisterPassword = document.getElementById("hint-register-password");
+
+    function validatePhone(phone) {
+      return PHONE_RE.test(phone);
+    }
+
+    function validatePasswordRegister(password) {
+      if (password.length < PASSWORD_MIN) return { ok: false, message: "密码至少 " + PASSWORD_MIN + " 位" };
+      if (password.length > PASSWORD_MAX) return { ok: false, message: "密码过长（最多 " + PASSWORD_MAX + " 位）" };
+      return { ok: true };
+    }
+
+    function setMsg(text, ok = false) {
+      msgEl.textContent = "";
+      msgEl.className = "message hidden";
+    }
+    function clearFieldHighlights() {
+      [loginPhone, loginPassword, registerPhone, registerPassword].forEach((el) => {
+        if (el) el.classList.remove("input-invalid");
+      });
+      [hintLoginPhone, hintRegisterPhone, hintLoginPassword, hintRegisterPassword].forEach((hintEl) => {
+        if (!hintEl) return;
+        hintEl.textContent = "";
+        hintEl.classList.remove("warn");
+      });
+    }
+
+    function highlightInvalid(el, hintEl, hintText) {
+      if (el) el.classList.add("input-invalid");
+      if (hintEl && hintText) {
+        hintEl.textContent = hintText;
+        hintEl.classList.add("warn");
+      }
+    }
+
+    function switchTab(kind) {
+      const isLogin = kind === "login";
+      tabLogin.classList.toggle("active", isLogin);
+      tabRegister.classList.toggle("active", !isLogin);
+      formLogin.classList.toggle("hidden", !isLogin);
+      formRegister.classList.toggle("hidden", isLogin);
+      setMsg("");
+      clearFieldHighlights();
+    }
+
+    function setLoading(btn, loading) {
+      btn.disabled = loading;
+      btn.textContent = loading ? "处理中..." : (btn.id === "btn-login" ? "登录并进入机构后台" : "注册并进入机构后台");
+    }
+
+    function bindPasswordToggle(toggleBtn, input) {
+      if (!toggleBtn || !input) return;
+      const eye = toggleBtn.querySelector(".icon-eye");
+      const eyeOff = toggleBtn.querySelector(".icon-eye-off");
+      toggleBtn.addEventListener("click", () => {
+        const revealing = input.type === "password";
+        input.type = revealing ? "text" : "password";
+        if (eye) eye.classList.toggle("hidden", revealing);
+        if (eyeOff) eyeOff.classList.toggle("hidden", !revealing);
+        toggleBtn.setAttribute("aria-label", revealing ? "隐藏密码" : "显示密码");
+        toggleBtn.setAttribute("title", revealing ? "隐藏密码" : "显示密码");
+      });
+    }
+
+    bindPasswordToggle(document.getElementById("toggle-login-password"), loginPassword);
+    bindPasswordToggle(document.getElementById("toggle-register-password"), registerPassword);
+
+    [loginPhone, loginPassword, registerPhone, registerPassword].forEach((el) => {
+      el.addEventListener("input", () => {
+        el.classList.remove("input-invalid");
+        if (el === loginPhone && hintLoginPhone) {
+          hintLoginPhone.textContent = "";
+          hintLoginPhone.classList.remove("warn");
+        }
+        if (el === loginPassword && hintLoginPassword) {
+          hintLoginPassword.textContent = "";
+          hintLoginPassword.classList.remove("warn");
+        }
+        if (el === registerPhone && hintRegisterPhone) {
+          hintRegisterPhone.textContent = "";
+          hintRegisterPhone.classList.remove("warn");
+        }
+        if (el === registerPassword && hintRegisterPassword) {
+          hintRegisterPassword.textContent = "";
+          hintRegisterPassword.classList.remove("warn");
+        }
+      });
+    });
+
+    function apiErrorMessage(status, rawText, detail) {
+      const t = typeof detail === "string" ? detail.trim() : "";
+      if (t.startsWith("<!") || (rawText && String(rawText).trim().startsWith("<!"))) {
+        return "服务器异常（" + status + "），请稍后重试；若持续出现请联系管理员检查服务与数据库迁移。";
+      }
+      if (detail && typeof detail === "string") return detail;
+      return "请求失败（" + status + "）";
+    }
+
+    async function req(path, payload) {
+      const resp = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const text = await resp.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (_) {
+        data = { detail: text };
+      }
+      if (!resp.ok) {
+        throw new Error(apiErrorMessage(resp.status, text, data.detail));
+      }
+      return data;
+    }
+
+    tabLogin.addEventListener("click", () => switchTab("login"));
+    tabRegister.addEventListener("click", () => switchTab("register"));
+
+    formLogin.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btn-login");
+      const phone = loginPhone.value.trim().replace(/\s+/g, "");
+      const password = loginPassword.value;
+
+      clearFieldHighlights();
+
+      if (!phone) {
+        highlightInvalid(loginPhone, hintLoginPhone, "请输入 11 位手机号");
+        loginPhone.focus();
+        return;
+      }
+      if (!validatePhone(phone)) {
+        highlightInvalid(loginPhone, hintLoginPhone, "格式：1 开头，第二位 3–9");
+        loginPhone.focus();
+        return;
+      }
+      if (!password) {
+        highlightInvalid(loginPassword, hintLoginPassword, "请输入密码");
+        loginPassword.focus();
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        const data = await req("/api/accounts/organization/login", { phone, password });
+        localStorage.setItem(STORAGE_KEY, data.access || "");
+        const token = data.access || "";
+        const profileResp = await fetch("/api/accounts/organization/profile", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        const profileText = await profileResp.text();
+        let profileData = {};
+        try {
+          profileData = profileText ? JSON.parse(profileText) : {};
+        } catch (_) {}
+        const vs = profileData.verification_status || "uninitiated";
+        if (vs === "uninitiated" || vs === "rejected") {
+          window.location.href = "/org/register-step2/";
+        } else {
+          window.location.href = "/org/console/";
+        }
+      } catch (err) {
+        highlightInvalid(loginPassword, hintLoginPassword, err.message || "登录失败");
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    formRegister.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btn-register");
+      const phone = registerPhone.value.trim().replace(/\s+/g, "");
+      const password = registerPassword.value;
+
+      clearFieldHighlights();
+
+      if (!phone) {
+        highlightInvalid(registerPhone, hintRegisterPhone, "请输入 11 位手机号");
+        registerPhone.focus();
+        return;
+      }
+      if (!validatePhone(phone)) {
+        highlightInvalid(registerPhone, hintRegisterPhone, "格式：1 开头，第二位 3–9");
+        registerPhone.focus();
+        return;
+      }
+      const pwdCheck = validatePasswordRegister(password);
+      if (!pwdCheck.ok) {
+        highlightInvalid(registerPassword, hintRegisterPassword, pwdCheck.message);
+        registerPassword.focus();
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        const data = await req("/api/accounts/organization/register", { phone, password });
+        localStorage.setItem(STORAGE_KEY, data.access || "");
+        window.location.href = "/org/register-step2/";
+      } catch (err) {
+        highlightInvalid(registerPassword, hintRegisterPassword, err.message || "注册失败");
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    if (localStorage.getItem(STORAGE_KEY)) {
+      window.location.href = "/org/console/";
+    }
+  </script>
+</body>
+</html>

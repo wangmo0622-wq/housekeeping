@@ -8,6 +8,9 @@ from rest_framework import permissions, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
+from rest_framework.filters import OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 from accounts.models import TechnicianProfile
 from catalog.cache_keys import PUBLIC_CATEGORY_TREE_PAYLOAD_KEY
@@ -20,6 +23,7 @@ from listings.serializers import (
     ListingListSerializer,
 )
 from listings.utils import generate_qr_code
+from listings.filters import ListingFilter
 from monitoring.models import CallAttempt
 
 
@@ -52,79 +56,27 @@ class PublicCategoryTreeView(APIView):
         return resp
 
 
-class PublicListingsView(APIView):
+class PublicListingsView(ListAPIView):
     permission_classes = [permissions.AllowAny]
+    serializer_class = ListingListSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_class = ListingFilter
+    ordering_fields = ["published_at", "created_at"]
+    ordering = ["-published_at", "-created_at"]
 
     class _Paginator(PageNumberPagination):
         page_size_query_param = "page_size"
 
-    def get(self, request):
-        search = (request.query_params.get("search") or request.query_params.get("q") or "").strip()
-        category_id = request.query_params.get("category_id")
-        service_type_id = request.query_params.get("service_type_id")
-        min_price = request.query_params.get("min_price")
-        max_price = request.query_params.get("max_price")
-        ordering = request.query_params.get("ordering", "-published_at")
-        technician_id = request.query_params.get("technician_id")
+    pagination_class = _Paginator
 
-        qs = (
+    def get_queryset(self):
+        return (
             Listing.objects.filter(status=Listing.Status.PUBLISHED, is_deleted=False)
             .select_related("category", "technician", "technician__user")
             .prefetch_related("services", "services__tags")
             .filter(technician__verification_status=TechnicianProfile.VerificationStatus.APPROVED)
             .filter(technician__is_disabled=False)
         )
-
-        if search:
-            qs = qs.filter(Q(title__icontains=search) | Q(description__icontains=search))
-
-        # 处理 technician_id 参数
-        if technician_id:
-            try:
-                technician_id_int = int(technician_id)
-                qs = qs.filter(technician_id=technician_id_int)
-            except ValueError:
-                return Response({"detail": "技师ID不合法"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if category_id:
-            try:
-                category_id_int = int(category_id)
-            except ValueError:
-                return Response({"detail": "分类ID不合法"}, status=status.HTTP_400_BAD_REQUEST)
-            related_category_ids = get_ancestor_or_descendant_ids(category_id_int)
-            qs = qs.filter(category_id__in=related_category_ids)
-
-        if service_type_id:
-            try:
-                service_type_id_int = int(service_type_id)
-                qs = qs.filter(services__id=service_type_id_int).distinct()
-            except ValueError:
-                return Response({"detail": "服务类型ID不合法"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if min_price:
-            try:
-                min_price_float = float(min_price)
-                qs = qs.filter(services__base_price__gte=min_price_float).distinct()
-            except ValueError:
-                return Response({"detail": "最低价格格式不合法"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if max_price:
-            try:
-                max_price_float = float(max_price)
-                qs = qs.filter(services__base_price__lte=max_price_float).distinct()
-            except ValueError:
-                return Response({"detail": "最高价格格式不合法"}, status=status.HTTP_400_BAD_REQUEST)
-
-        valid_orderings = ["-published_at", "-created_at", "published_at", "created_at"]
-        if ordering in valid_orderings:
-            qs = qs.order_by(ordering, "-created_at")
-        else:
-            qs = qs.order_by("-published_at", "-created_at")
-
-        paginator = self._Paginator()
-        page = paginator.paginate_queryset(qs, request, view=self)
-        serializer = ListingListSerializer(page, many=True)
-        return paginator.get_paginated_response(serializer.data)
 
 
 class PublicListingDetailView(APIView):

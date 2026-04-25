@@ -1,0 +1,376 @@
+/**
+ * 管理后台 — 列表 / 详情 / 编辑 / 按钮 统一设计规范
+ * 与 admin_portal/styles.css 中 :root 色板一致
+ */
+
+/* -------------------------------------------------------------------------- */
+/* 页面根：与主内容区对齐、限制最大宽（大屏不松散） */
+/* -------------------------------------------------------------------------- */
+#admin-page-root.zy-page,
+.zy-page#admin-page-root {
+  min-height: 2rem;
+}
+
+.zy-content .zy-page > .zy-card:first-child,
+#admin-page-root.zy-page > .zy-card:first-child {
+  margin-top: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 顶栏：简单筛选行（与 zy-search-bar 并列的轻量版） */
+/* -------------------------------------------------------------------------- */
+.zy-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.zy-toolbar-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.zy-toolbar-row .zy-form-input,
+.zy-toolbar-row .zy-select {
+  min-width: 0;
+}
+
+.zy-toolbar-row .zy-form-input--md {
+  max-width: 20rem;
+  width: 100%;
+}
+
+.zy-toolbar-row .zy-form-input--sm {
+  max-width: 11.25rem;
+  width: 100%;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 表格空状态 */
+/* -------------------------------------------------------------------------- */
+.zy-table td.zy-table-empty {
+  text-align: center;
+  color: var(--zy-text-secondary);
+  padding: 2.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.zy-table td.zy-table-empty.zy-table-empty--error {
+  color: var(--zy-danger);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 行内操作链接语义色（与主题变量一致，暗色可跟主题走） */
+/* -------------------------------------------------------------------------- */
+.zy-actions .zy-action-link--muted {
+  color: var(--zy-text-secondary);
+}
+
+.zy-actions .zy-action-link--primary,
+.zy-actions a.zy-action-link--primary {
+  color: var(--zy-primary);
+}
+
+.zy-actions .zy-action-link--success,
+.zy-actions a.zy-action-link--success,
+.text-green-600 {
+  color: #059669;
+}
+
+html[data-theme="dark"] .zy-actions .zy-action-link--success,
+html[data-theme="dark"] .text-green-600 {
+  color: var(--zy-success);
+}
+
+.zy-actions .zy-action-link--danger,
+.zy-actions a.zy-action-link--danger,
+.text-red-600 {
+  color: #dc2626;
+}
+
+html[data-theme="dark"] .zy-actions .zy-action-link--danger,
+html[data-theme="dark"] .text-red-600 {
+  color: var(--zy-danger);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 弹窗内详情：键值对（替代散乱 inline 样式） */
+/* -------------------------------------------------------------------------- */
+.zy-detail-block {
+  line-height: 1.7;
+  font-size: 0.875rem;
+  color: var(--zy-text);
+}
+
+.zy-detail-line {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.5rem 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--zy-border);
+}
+
+.zy-detail-line:last-of-type {
+  border-bottom: none;
+}
+
+.zy-detail-k {
+  color: var(--zy-text-secondary);
+  font-weight: 500;
+}
+
+.zy-detail-v {
+  color: var(--zy-text);
+  word-break: break-word;
+}
+
+/* 单列标题块（详情分组） */
+.zy-detail-section-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--zy-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.zy-detail-section-title:first-child {
+  margin-top: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 抽屉内表单区：与 zy-listing-edit 等并列 */
+/* -------------------------------------------------------------------------- */
+.zy-panel-section-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--zy-text);
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--zy-border);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 侧栏/区块：无数据提示（非表格） */
+/* -------------------------------------------------------------------------- */
+.zy-empty-hint {
+  color: var(--zy-text-secondary);
+  text-align: center;
+  padding: 1.5rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.zy-empty-hint--tight {
+  padding: 1rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 设置类页面：标题 + 窄表单卡 */
+/* -------------------------------------------------------------------------- */
+.zy-form-page {
+  max-width: 28rem;
+}
+
+.zy-page-heading {
+  margin-bottom: 1.25rem;
+}
+
+.zy-page-heading-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--zy-text);
+  margin: 0;
+}
+
+.zy-page-heading-desc {
+  font-size: 0.875rem;
+  color: var(--zy-text-secondary);
+  margin: 0.35rem 0 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 抽屉内机构端表单（listings/technicians 等）：行高、行距（修正后台内过于拥挤） */
+/* -------------------------------------------------------------------------- */
+.zy-drawer-body .org-service-edit {
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.zy-drawer-body .org-field-section {
+  padding: 1rem 1rem 1.1rem;
+}
+
+.zy-drawer-body .org-field-section--covers {
+  margin-bottom: 0.95rem;
+}
+
+.zy-drawer-body .org-cover-dropzone {
+  padding: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 7.25rem));
+  gap: 0.75rem;
+  align-items: start;
+  justify-content: start;
+}
+
+.zy-drawer-body .org-desc-block {
+  margin-top: 0.35rem;
+  padding: 0.2rem 0.1rem 0;
+}
+
+.zy-drawer-body .org-form-grid {
+  display: grid;
+  grid-template-columns: 6.25rem minmax(0, 1fr);
+  column-gap: 0.85rem;
+  row-gap: 0.35rem;
+  align-items: start;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--zy-border, #e5e7eb);
+}
+
+.zy-drawer-body .org-form-grid:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0.25rem;
+}
+
+.zy-drawer-body .org-form-grid > label {
+  line-height: 1.45;
+  padding-top: 0.38rem;
+  font-size: 0.8125rem;
+}
+
+.zy-drawer-body .org-form-grid > div {
+  line-height: 1.45;
+  min-width: 0;
+}
+
+.zy-drawer-body .org-form-grid .ipt,
+.zy-drawer-body .org-form-grid select.ipt {
+  line-height: 1.45;
+  min-height: 2.45rem;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  box-sizing: border-box;
+}
+
+.zy-drawer-body .org-form-grid .txt {
+  line-height: 1.55;
+  min-height: 7rem;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  box-sizing: border-box;
+}
+
+.zy-drawer-body .org-desc-block .txt {
+  line-height: 1.6;
+  min-height: 8rem;
+  padding: 0.7rem 0.8rem;
+}
+
+#adm_ose_desc {
+  padding: 0.7rem 0.8rem;
+}
+
+.zy-drawer-body .org-field-title {
+  line-height: 1.4;
+  margin: 0 0 0.75rem;
+  padding-top: 0.15rem;
+}
+
+.zy-drawer-body .org-field-section > .org-field-title:first-child {
+  margin-top: 0;
+}
+
+.zy-drawer-body .org-form-hint,
+.zy-drawer-body .org-form-hint-block {
+  line-height: 1.45;
+  margin-top: 0.25rem;
+}
+
+.zy-drawer-body .org-form-hint-block {
+  margin-bottom: 0.75rem;
+}
+
+.zy-drawer-body .org-price-pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .zy-drawer-body .org-price-pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.zy-drawer-body .org-price-pair label.inner {
+  display: block;
+  line-height: 1.4;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.zy-thumb-item {
+  position: relative;
+  display: inline-flex;
+  width: 7.25rem;
+  height: 7.25rem;
+}
+
+.zy-drawer-body .org-cover-dropzone .org-thumb {
+  width: 7.25rem;
+  height: 7.25rem;
+}
+
+.zy-thumb-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zy-thumb-remove:hover {
+  background: rgba(220, 38, 38, 0.92);
+}
+
+.zy-upload-plus-tile {
+  width: 7.25rem;
+  height: 7.25rem;
+  border: 2px dashed #cbd5e1;
+  border-radius: 0.65rem;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.zy-upload-plus-tile:hover {
+  border-color: #94a3b8;
+  color: #475569;
+  background: #f1f5f9;
+}

@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from catalog.models import Banner, ServiceType, HotService
-from catalog.utils import get_ancestor_or_descendant_ids
+from catalog.utils import bootstrap_default_hot_services, get_ancestor_or_descendant_ids
 
 
 class PublicBannerListView(APIView):
@@ -79,6 +79,7 @@ class PublicHotServiceListView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        bootstrap_default_hot_services()
         hot_services = HotService.objects.filter(status=HotService.Status.ENABLED).order_by("-sort_order", "-created_at")
         data = [
             {

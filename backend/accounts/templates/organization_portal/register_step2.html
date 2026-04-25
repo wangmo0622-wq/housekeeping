@@ -1,0 +1,451 @@
+{% load static %}
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>机构门户 - 完善认证资料</title>
+  <link rel="stylesheet" href="{% static 'css/organization_portal.css' %}?v=20260425b" />
+  <style>
+    :root {
+      --panel-border: #e2e8f0;
+      --panel-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --blue-main: #2563eb;
+      --blue-deep: #1d4ed8;
+    }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.12), transparent 35%),
+        radial-gradient(circle at 85% 15%, rgba(99, 102, 241, 0.12), transparent 40%),
+        #f8fafc;
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .page-wrap { max-width: 980px; margin: 0 auto; padding: 28px 20px; }
+    .topbar {
+      max-width: 980px;
+      margin: 0 auto 14px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #0f172a;
+      text-decoration: none;
+      font-weight: 800;
+    }
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+      font-size: 18px;
+      line-height: 1;
+    }
+    .brand-sub { color: #64748b; font-size: 13px; font-weight: 500; }
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    }
+    .hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .title { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+    .subtitle { color: var(--text-sub); }
+    .step-pill {
+      flex-shrink: 0;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .section {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 14px;
+      background: #fcfdff;
+    }
+    .section-title { font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 10px; }
+    .line { margin-bottom: 12px; }
+    .line:last-child { margin-bottom: 0; }
+    .line label { display: block; margin-bottom: 6px; color: #334155; font-weight: 600; font-size: 14px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .ipt {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fff;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .ipt:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+    .row-btns { display: flex; justify-content: flex-end; margin-top: 16px; }
+    .btn {
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--blue-main), var(--blue-deep));
+      color: #fff;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.28);
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+    .msg { min-height: 22px; font-size: 13px; margin-top: 10px; }
+    .msg.ok { color: #15803d; }
+    .msg.err { color: #b91c1c; }
+    .org-toast-wrap {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .org-toast {
+      min-width: 240px;
+      max-width: 360px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      color: #0f172a;
+      padding: 10px 12px;
+      box-shadow: 0 12px 28px rgba(2, 6, 23, 0.14);
+      font-size: 13px;
+      line-height: 1.45;
+      opacity: 0;
+      transform: translateX(18px);
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .org-toast.show { opacity: 1; transform: translateX(0); }
+    .org-toast.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+    .org-toast.error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+    .org-toast.warning { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+    .org-toast.info { border-color: #bfdbfe; background: #eff6ff; color: #1e3a8a; }
+    .org-thumb { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; border: 1px solid #e2e8f0; }
+    .zy-thumb-item { position: relative; display: inline-flex; }
+    .zy-thumb-remove {
+      position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
+      border: none; border-radius: 9999px; background: rgba(15, 23, 42, 0.72);
+      color: #fff; font-size: 14px; line-height: 1; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .zy-upload-plus-tile {
+      width: 120px; height: 120px; border-radius: 12px; border: 2px dashed #cbd5e1;
+      background: #f8fafc; color: #64748b; font-size: 42px; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .zy-upload-plus-tile:hover { border-color: #818cf8; color: #4f46e5; background: #eef2ff; }
+    .license-zone { max-width: 420px; display: inline-flex; gap: 10px; flex-wrap: wrap; }
+    @media (max-width: 768px) {
+      .grid2 { grid-template-columns: 1fr; }
+      .hero { flex-direction: column; align-items: flex-start; }
+      .card { padding: 18px; border-radius: 14px; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50">
+  <div class="topbar">
+    <a class="brand" href="/org/">
+      <span class="brand-logo">P</span>
+      <span>
+        <span>机构门户</span>
+        <span class="brand-sub">认证资料完善</span>
+      </span>
+    </a>
+  </div>
+  <div class="page-wrap">
+    <div class="card">
+      <div class="hero">
+        <div>
+          <div class="title">完善机构认证资料</div>
+          <div class="subtitle">注册已完成，请完善资料后提交认证，审核通过后即可开展业务。</div>
+        </div>
+        <div class="step-pill">注册第 2 步 / 2</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">基础信息</div>
+        <div class="line"><label>企业名称</label><input id="org-company-name" class="ipt" /></div>
+        <div class="grid2">
+          <div class="line"><label>联系人</label><input id="org-contact-person" class="ipt" /></div>
+          <div class="line"><label>联系电话</label><input id="org-contact-phone" class="ipt" /></div>
+        </div>
+        <div class="line">
+          <label>企业地址（省 / 市 / 县）</label>
+          <div class="grid2">
+            <div class="line"><select id="org-province" class="ipt"></select></div>
+            <div class="line"><select id="org-city" class="ipt"></select></div>
+          </div>
+          <div class="grid2">
+            <div class="line"><select id="org-district" class="ipt"></select></div>
+            <div class="line"><input id="org-address-detail" class="ipt" placeholder="详细地址（街道/门牌）" /></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">资质材料</div>
+        <div class="line"><label>营业执照号</label><input id="org-license-no" class="ipt" /></div>
+        <div class="line">
+          <label>营业执照（最多1张）</label>
+          <div id="org-license-dropzone" class="license-zone"></div>
+          <input id="org-license-file" class="ipt" type="file" accept="image/*,.pdf" style="display:none;" />
+        </div>
+      </div>
+
+      <div class="row-btns">
+        <button id="btn-submit-org-verify" class="btn" type="button">提交机构认证</button>
+      </div>
+      <div id="org-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <script>
+    const TOKEN_KEY = "org_access_token";
+    const token = localStorage.getItem(TOKEN_KEY) || "";
+    if (!token) window.location.href = "/org/login/";
+
+    let regionApiCache = { provinces: [], cities: {}, districts: {}, default: {} };
+    let pendingOrgLicenseFile = null;
+    let currentOrgLicenseUrl = "";
+    let orgProfileLocked = false;
+
+    function s(v) { return v == null ? "" : String(v); }
+    function escapeAttr(v) { return s(v).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    function setMsg(text, ok = false) {
+      const el = document.getElementById("org-msg");
+      // 页面内不显示提示文案，只保留右上角 toast
+      el.textContent = "";
+      el.className = "msg";
+      if (text) {
+        const t = String(text);
+        let type = ok ? "success" : "error";
+        if (!ok && (/请|提示|建议|注意|未/.test(t) && !/失败|错误|异常/.test(t))) type = "warning";
+        showToast(t, type);
+      }
+    }
+    function showToast(message, type = "info", duration = 3000) {
+      const text = String(message || "").trim();
+      if (!text) return;
+      let wrap = document.getElementById("org-toast-wrap");
+      if (!wrap) {
+        wrap = document.createElement("div");
+        wrap.id = "org-toast-wrap";
+        wrap.className = "org-toast-wrap";
+        document.body.appendChild(wrap);
+      }
+      const toast = document.createElement("div");
+      toast.className = `org-toast ${type}`;
+      toast.textContent = text;
+      wrap.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add("show"));
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 220);
+      }, Math.max(1200, Number(duration) || 3000));
+    }
+    if (!window.__orgAlertPatched) {
+      window.__orgAlertPatched = true;
+      const nativeAlert = window.alert ? window.alert.bind(window) : null;
+      window.alert = function(msg) {
+        const text = String(msg || "").trim();
+        if (!text) return;
+        if (typeof showToast === "function") showToast(text, "error");
+        else if (nativeAlert) nativeAlert(text);
+      };
+    }
+    async function api(url, opts = {}) {
+      const resp = await fetch(url, {
+        ...opts,
+        headers: { Authorization: "Bearer " + token, ...(opts.headers || {}) },
+      });
+      const text = await resp.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_) { data = { detail: text }; }
+      if (!resp.ok) throw new Error(data.detail || ("请求失败(" + resp.status + ")"));
+      return data;
+    }
+    function parseAddressParts(raw) {
+      const txt = s(raw).trim();
+      return { pCode: "", cCode: "", dCode: "", detail: txt };
+    }
+    function composeAddressValue() {
+      const p = document.getElementById("org-province");
+      const c = document.getElementById("org-city");
+      const d = document.getElementById("org-district");
+      const detail = document.getElementById("org-address-detail").value.trim();
+      const pName = (regionApiCache.provinces || []).find((x) => String(x.code) === String(p.value || ""))?.name || "";
+      const cName = (regionApiCache.cities[p.value] || []).find((x) => String(x.code) === String(c.value || ""))?.name || "";
+      const dName = (regionApiCache.districts[c.value] || []).find((x) => String(x.code) === String(d.value || ""))?.name || "";
+      return [pName, cName, dName, detail].filter(Boolean).join("");
+    }
+    async function fetchRegion(level, parentCode = "") {
+      const params = new URLSearchParams({ level });
+      if (parentCode) params.append("parent_code", parentCode);
+      return api("/api/accounts/regions?" + params.toString(), { method: "GET" });
+    }
+    function fillSelect(el, items, emptyText) {
+      el.innerHTML = `<option value="">${emptyText}</option>` + (items || []).map((x) => `<option value="${escapeAttr(x.code)}">${escapeAttr(x.name)}</option>`).join("");
+    }
+    async function ensureProvinces() {
+      if (regionApiCache.provinces.length) return;
+      const data = await fetchRegion("province");
+      const provinces = Array.isArray(data.items) ? data.items.slice() : [];
+      const jiangxiIdx = provinces.findIndex((x) => String(x.name || "").includes("江西"));
+      if (jiangxiIdx > 0) {
+        const [jx] = provinces.splice(jiangxiIdx, 1);
+        provinces.unshift(jx);
+      }
+      regionApiCache.provinces = provinces;
+      regionApiCache.default = data.default || {};
+    }
+    async function ensureCities(provinceCode) {
+      if (!provinceCode) return [];
+      if (regionApiCache.cities[provinceCode]) return regionApiCache.cities[provinceCode];
+      const data = await fetchRegion("city", provinceCode);
+      regionApiCache.cities[provinceCode] = data.items || [];
+      return regionApiCache.cities[provinceCode];
+    }
+    async function ensureDistricts(cityCode) {
+      if (!cityCode) return [];
+      if (regionApiCache.districts[cityCode]) return regionApiCache.districts[cityCode];
+      const data = await fetchRegion("district", cityCode);
+      regionApiCache.districts[cityCode] = data.items || [];
+      return regionApiCache.districts[cityCode];
+    }
+    async function renderRegionSelectors(pCode = "", cCode = "", dCode = "") {
+      await ensureProvinces();
+      const pSel = document.getElementById("org-province");
+      const cSel = document.getElementById("org-city");
+      const dSel = document.getElementById("org-district");
+      fillSelect(pSel, regionApiCache.provinces, "请选择省份");
+      const finalP = pCode || pSel.value || regionApiCache.default.province_code || "";
+      if (finalP) pSel.value = finalP;
+      const cities = await ensureCities(pSel.value);
+      fillSelect(cSel, cities, "请选择城市");
+      const finalC = cCode || cSel.value || regionApiCache.default.city_code || "";
+      if (finalC) cSel.value = finalC;
+      const districts = await ensureDistricts(cSel.value);
+      fillSelect(dSel, districts, "请选择区县");
+      const finalD = dCode || dSel.value || regionApiCache.default.district_code || "";
+      if (finalD) dSel.value = finalD;
+    }
+    function renderOrgLicenseDropzone() {
+      const dz = document.getElementById("org-license-dropzone");
+      const hasPending = !!pendingOrgLicenseFile;
+      const pendingUrl = hasPending ? URL.createObjectURL(pendingOrgLicenseFile) : "";
+      const previewUrl = hasPending ? pendingUrl : currentOrgLicenseUrl;
+      const hasPreview = !!previewUrl;
+      const uploadTile = orgProfileLocked || hasPreview ? "" : '<button type="button" class="zy-upload-plus-tile" id="org_license_add" title="上传执照">+</button>';
+      const previewHtml = hasPreview
+        ? `<div class="zy-thumb-item"><img src="${escapeAttr(previewUrl)}" class="org-thumb" alt="" />${orgProfileLocked ? "" : '<button type="button" class="zy-thumb-remove" id="org_license_remove" title="删除">×</button>'}</div>`
+        : "";
+      dz.innerHTML = `${previewHtml}${uploadTile}`;
+    }
+    function applyOrgProfileLock() {
+      const locked = orgProfileLocked;
+      ["org-company-name", "org-contact-person", "org-contact-phone", "org-license-no", "org-province", "org-city", "org-district", "org-address-detail"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = locked;
+      });
+      document.getElementById("btn-submit-org-verify").disabled = locked;
+      if (locked) setMsg("当前机构已认证通过，资料已锁定");
+    }
+    async function loadOrgProfile() {
+      const data = await api("/api/accounts/organization/profile", { method: "GET" });
+      orgProfileLocked = data.verification_status === "approved";
+      currentOrgLicenseUrl = data.business_license || "";
+      pendingOrgLicenseFile = null;
+      document.getElementById("org-company-name").value = s(data.company_name);
+      document.getElementById("org-contact-person").value = s(data.contact_person);
+      document.getElementById("org-contact-phone").value = s(data.contact_phone);
+      const detailAddr = parseAddressParts(data.address).detail;
+      document.getElementById("org-address-detail").value = s(detailAddr);
+      document.getElementById("org-license-no").value = s(data.business_license_number);
+      renderOrgLicenseDropzone();
+      applyOrgProfileLock();
+    }
+    async function saveOrgProfile(silent = false) {
+      const fd = new FormData();
+      fd.append("company_name", document.getElementById("org-company-name").value.trim());
+      fd.append("contact_person", document.getElementById("org-contact-person").value.trim());
+      fd.append("contact_phone", document.getElementById("org-contact-phone").value.trim());
+      fd.append("address", composeAddressValue());
+      fd.append("business_license_number", document.getElementById("org-license-no").value.trim());
+      if (pendingOrgLicenseFile) fd.append("business_license", pendingOrgLicenseFile);
+      if (!pendingOrgLicenseFile && !currentOrgLicenseUrl) fd.append("remove_business_license", "1");
+      await api("/api/accounts/organization/profile", { method: "PATCH", body: fd });
+      if (!silent) setMsg("机构资料已保存", true);
+      await loadOrgProfile();
+    }
+    async function submitOrgVerification() {
+      await saveOrgProfile(true);
+      const data = await api("/api/accounts/organization/verification/submit", { method: "POST", body: "{}" });
+      setMsg("已提交机构认证，当前状态：" + s(data.verification_status || "pending"), true);
+      window.location.href = "/org/console/?view=my_verify&submitted=1";
+    }
+
+    const orgProvinceSelect = document.getElementById("org-province");
+    const orgCitySelect = document.getElementById("org-city");
+    const orgDistrictSelect = document.getElementById("org-district");
+    orgProvinceSelect.addEventListener("change", async () => { await renderRegionSelectors(orgProvinceSelect.value); });
+    orgCitySelect.addEventListener("change", async () => { await renderRegionSelectors(orgProvinceSelect.value, orgCitySelect.value); });
+    orgDistrictSelect.addEventListener("change", () => {});
+
+    const orgLicenseInput = document.getElementById("org-license-file");
+    const orgLicenseDropzone = document.getElementById("org-license-dropzone");
+    orgLicenseDropzone.addEventListener("click", (e) => {
+      if (orgProfileLocked) return;
+      if (e.target.closest("#org_license_remove")) {
+        e.preventDefault();
+        pendingOrgLicenseFile = null;
+        currentOrgLicenseUrl = "";
+        orgLicenseInput.value = "";
+        renderOrgLicenseDropzone();
+        return;
+      }
+      if (e.target.closest("#org_license_add")) orgLicenseInput.click();
+    });
+    orgLicenseInput.addEventListener("change", () => {
+      pendingOrgLicenseFile = (orgLicenseInput.files && orgLicenseInput.files[0]) || null;
+      renderOrgLicenseDropzone();
+    });
+    document.getElementById("btn-submit-org-verify").addEventListener("click", async () => { try { await submitOrgVerification(); } catch (e) { setMsg(e.message); } });
+
+    (async function init() {
+      try {
+        await renderRegionSelectors();
+        await loadOrgProfile();
+      } catch (e) {
+        setMsg(e.message);
+      }
+    })();
+  </script>
+</body>
+</html>

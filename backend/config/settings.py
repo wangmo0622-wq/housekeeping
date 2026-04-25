@@ -15,9 +15,19 @@ from pathlib import Path
 from datetime import timedelta
 import logging
 
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# 统一数据库等配置：先读仓库根目录 .env，再读 backend/.env（后者可覆盖前者）
+if load_dotenv:
+    _REPO_ROOT = BASE_DIR.parent
+    load_dotenv(_REPO_ROOT / ".env")
+    load_dotenv(BASE_DIR / ".env", override=True)
 
 
 # Quick-start development settings - unsuitable for production
@@ -51,7 +61,8 @@ INSTALLED_APPS = [
     # Third-party
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
+    # 不启用 token_blacklist：签发/刷新 JWT 不依赖 OutstandingToken 等表，避免未 migrate 即 500。
+    # 登出以客户端丢弃 token 为主；服务端不再维护黑名单。
     'corsheaders',
     'django_filters',
     'drf_yasg',
@@ -97,17 +108,39 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+#
+# 仅使用 PostgreSQL，与仓库根目录 .env 及 docker-compose 中 POSTGRES_* 一致（不再使用 SQLite）。
+_POSTGRES_DB = os.environ.get("POSTGRES_DB", "jiazheng").strip()
+_POSTGRES_USER = os.environ.get("POSTGRES_USER", "duoduo").strip()
+_POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "")
+_POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "localhost").strip()
+_POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432").strip()
+try:
+    _POSTGRES_CONN_MAX_AGE = int(os.environ.get("POSTGRES_CONN_MAX_AGE", "0"))
+except ValueError:
+    _POSTGRES_CONN_MAX_AGE = 0
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', os.environ.get('DB_NAME', 'jiazheng')),
-        'USER': os.environ.get('POSTGRES_USER', os.environ.get('DB_USER', 'duoduo')),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', os.environ.get('DB_PASSWORD', '')),
-        'HOST': os.environ.get('POSTGRES_HOST', os.environ.get('DB_HOST', 'localhost')),
-        'PORT': os.environ.get('POSTGRES_PORT', os.environ.get('DB_PORT', '5432')),
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": _POSTGRES_DB,
+        "USER": _POSTGRES_USER,
+        "PASSWORD": _POSTGRES_PASSWORD,
+        "HOST": _POSTGRES_HOST,
+        "PORT": _POSTGRES_PORT,
+        "CONN_MAX_AGE": _POSTGRES_CONN_MAX_AGE,
     }
 }
+
+if DEBUG:
+    _db = DATABASES["default"]
+    logging.getLogger(__name__).info(
+        "[DB] PostgreSQL 库=%s 主机=%s:%s 用户=%s",
+        _db.get("NAME"),
+        _db.get("HOST"),
+        _db.get("PORT"),
+        _db.get("USER"),
+    )
 
 
 # Password validation
@@ -144,7 +177,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Extra static files (for admin CSS overrides)
 STATICFILES_DIRS = [BASE_DIR / "static", BASE_DIR / "staticfiles"]
@@ -166,6 +199,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # 缓存：无 Redis 时 USE_REDIS=false（如部分 CI）使用本地内存
+# 注意：管理后台登录验证码依赖 cache；若用 gunicorn 多 worker，必须启用 Redis 等进程间共享缓存，
+# 否则 LocMemCache 下各 worker 内存独立，验证码会表现为「总是错误」或「已过期」。
 _use_redis = os.environ.get('USE_REDIS', 'true').lower() == 'true'
 if _use_redis:
     CACHES = {
@@ -206,8 +241,9 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    # 未启用 token_blacklist 时，轮换刷新会在无黑名单下留下安全隐患；关闭轮换，沿用同一 refresh 至过期。
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
 }
 
 # CORS：生产环境在 .env 中关闭 CORS_ALLOW_ALL_ORIGINS 并配置 CORS_ALLOWED_ORIGINS

@@ -1,0 +1,1433 @@
+{% load static %}
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>机构门户 - 管理后台</title>
+  <link rel="stylesheet" href="{% static 'css/organization_portal.css' %}" />
+  <style>
+    .zy-thumb-item { position: relative; display: inline-flex; }
+    .zy-thumb-remove {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 22px;
+      height: 22px;
+      border: none;
+      border-radius: 9999px;
+      background: rgba(15, 23, 42, 0.72);
+      color: #fff;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .zy-upload-plus-tile {
+      width: 120px;
+      height: 120px;
+      border-radius: 12px;
+      border: 2px dashed #cbd5e1;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 42px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+    .zy-upload-plus-tile:hover {
+      border-color: #818cf8;
+      color: #4f46e5;
+      background: #eef2ff;
+    }
+    .org-verify-status {
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .org-verify-status-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      border: 1px solid transparent;
+    }
+    .org-verify-status-title { font-size: 16px; font-weight: 700; color: #1f2937; }
+    .org-verify-status-desc { margin-top: 4px; font-size: 13px; color: #64748b; }
+    .org-verify-status.is-approved .org-verify-status-badge { color: #047857; background: #ecfdf5; border-color: #a7f3d0; }
+    .org-verify-status.is-pending .org-verify-status-badge { color: #92400e; background: #fffbeb; border-color: #fde68a; }
+    .org-verify-status.is-rejected .org-verify-status-badge { color: #b91c1c; background: #fef2f2; border-color: #fecaca; }
+    .org-verify-status.is-uninitiated .org-verify-status-badge { color: #4338ca; background: #eef2ff; border-color: #c7d2fe; }
+
+
+    .org-user-menu { position: relative; }
+    .org-user-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 9999px;
+      background: #fff;
+      cursor: pointer;
+      color: #334155;
+      font-weight: 600;
+    }
+    .org-user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 9999px;
+      background: linear-gradient(135deg, #3b82f6, #4f46e5);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .org-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .org-user-dropdown {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 2px);
+      min-width: 150px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+      padding: 6px;
+      display: none;
+      z-index: 20;
+    }
+    .org-user-menu:hover .org-user-dropdown,
+    .org-user-menu.is-open .org-user-dropdown { display: block; }
+    .org-user-dropdown button {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: left;
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #334155;
+      cursor: pointer;
+    }
+    .org-user-dropdown button:hover { background: #f1f5f9; }
+    .org-toast-wrap {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .org-toast {
+      min-width: 240px;
+      max-width: 360px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      color: #0f172a;
+      padding: 10px 12px;
+      box-shadow: 0 12px 28px rgba(2, 6, 23, 0.14);
+      font-size: 13px;
+      line-height: 1.45;
+      opacity: 0;
+      transform: translateX(18px);
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .org-toast.show { opacity: 1; transform: translateX(0); }
+    .org-toast.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+    .org-toast.error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+    .org-toast.warning { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+    .org-toast.info { border-color: #bfdbfe; background: #eff6ff; color: #1e3a8a; }
+
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">机构管理后台</div>
+    <div class="row-btns">
+      <div id="org-user-menu" class="org-user-menu">
+        <button type="button" class="org-user-trigger" id="org-user-trigger" aria-label="用户菜单">
+          <span id="org-user-avatar" class="org-user-avatar">机</span>
+          <span id="org-user-name">机构用户</span>
+        </button>
+        <div class="org-user-dropdown" id="org-user-dropdown">
+          <button type="button" id="btn-change-password">修改密码</button>
+          <button type="button" id="btn-logout">退出</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <button class="menu-btn active" data-view="dashboard">管理首页</button>
+      <button class="menu-btn" data-view="my_verify">我的认证</button>
+      <button class="menu-btn" data-view="tech_manage">技师管理</button>
+      <button class="menu-btn" data-view="service_manage">服务管理</button>
+      <button class="menu-btn" data-view="messages">消息管理</button>
+    </aside>
+
+    <main class="content">
+      <section id="view-dashboard" class="view active">
+        <div class="card">
+          <h3>管理首页概览</h3>
+          <div class="kpis">
+            <div class="kpi"><div class="t">待审技师</div><div id="kpi-tech-pending" class="v">0</div><div class="s">当前机构范围</div></div>
+            <div class="kpi"><div class="t">技师人数</div><div id="kpi-tech-total" class="v">0</div><div class="s">当前机构范围</div></div>
+            <div class="kpi"><div class="t">服务总数</div><div id="kpi-svc-total" class="v">0</div><div class="s">认证技师发布</div></div>
+            <div class="kpi"><div class="t">未读消息</div><div id="kpi-msg-total" class="v">0</div><div class="s">待处理通知</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-my_verify" class="view">
+        <div class="card">
+          <h3>我的认证</h3>
+          <div id="org-verify-status" class="org-verify-status is-uninitiated">
+            <div id="org-status-badge" class="org-verify-status-badge">未发起认证</div>
+            <div id="org-status-title" class="org-verify-status-title">请完善资料并提交认证</div>
+            <div id="org-status-desc" class="org-verify-status-desc">认证通过后可在平台展示机构与服务能力。</div>
+          </div>
+          <div class="line"><label>企业名称</label><input id="org-company-name" class="ipt" /></div>
+          <div class="grid2">
+            <div class="line"><label>联系人</label><input id="org-contact-person" class="ipt" /></div>
+            <div class="line"><label>联系电话</label><input id="org-contact-phone" class="ipt" /></div>
+          </div>
+          <div class="line">
+            <label>企业地址（省 / 市 / 县）</label>
+            <div class="grid2">
+              <div class="line"><select id="org-province" class="ipt"></select></div>
+              <div class="line"><select id="org-city" class="ipt"></select></div>
+            </div>
+            <div class="grid2" style="margin-top:8px;">
+              <div class="line"><select id="org-district" class="ipt"></select></div>
+              <div class="line"><input id="org-address-detail" class="ipt" placeholder="详细地址（街道/门牌）" /></div>
+            </div>
+          </div>
+          <div class="line"><label>营业执照号</label><input id="org-license-no" class="ipt" /></div>
+          <div class="line"><label>营业执照（最多1张）</label>
+            <div id="org-license-dropzone" style="max-width:420px;display:inline-flex;gap:10px;flex-wrap:wrap;"></div>
+            <input id="org-license-file" class="ipt" type="file" accept="image/*,.pdf" style="display:none;" />
+          </div>
+          <div id="org-verify-actions" class="row-btns">
+            <button id="btn-save-org" class="btn">保存资料</button>
+            <button id="btn-submit-org-verify" class="btn alt">提交机构认证</button>
+          </div>
+          <div id="org-msg" class="msg"></div>
+        </div>
+      </section>
+
+      <section id="view-tech_manage" class="view">
+        <div class="card">
+          <h3>技师管理</h3>
+          <div class="org-tech-toolbar">
+            <div class="org-tech-toolbar-bind">
+              <span class="org-tech-toolbar-label">绑定认证技师</span>
+              <input id="bind-tech-phone" class="ipt" type="tel" inputmode="numeric" autocomplete="tel" placeholder="已认证技师手机号" />
+              <button type="button" id="btn-bind-tech" class="btn">绑定</button>
+            </div>
+            <button type="button" id="btn-open-new-tech" class="btn">新增技师</button>
+          </div>
+          <div id="bind-msg" class="msg"></div>
+          <table>
+            <thead><tr><th>关系ID</th><th>技师ID</th><th>姓名</th><th>手机号</th><th>认证状态</th><th>关联状态</th><th>操作</th></tr></thead>
+            <tbody id="tech-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="view-service_manage" class="view">
+        <div class="card">
+          <h3>服务管理（认证技师发布的服务）</h3>
+          <div style="display:flex; gap:8px; margin-bottom:8px;">
+            <input id="service-q" class="ipt" style="max-width:300px;" placeholder="标题/描述/发布者" />
+            <select id="service-status" class="ipt" style="max-width:180px;">
+              <option value="">全部状态</option><option value="draft">草稿</option><option value="pending">待审核</option><option value="published">已发布</option><option value="rejected">已驳回</option><option value="disabled">已下架</option>
+            </select>
+            <button id="btn-service-search" class="btn">查询</button>
+          </div>
+          <table>
+            <thead><tr><th>ID</th><th>标题</th><th>发布者</th><th>状态</th><th>区域</th><th>联系方式</th><th>操作</th></tr></thead>
+            <tbody id="service-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="view-messages" class="view">
+        <div class="card">
+          <h3>消息管理（审核汇总）</h3>
+          <div id="msg-summary" class="line"></div>
+          <table>
+            <thead><tr><th>类型</th><th>内容</th><th>处理建议</th></tr></thead>
+            <tbody id="message-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="org-drawer-overlay" class="org-drawer-overlay" aria-hidden="true">
+    <div class="org-drawer" role="dialog" aria-modal="true">
+      <div class="org-drawer-header">
+        <h3 id="org-drawer-title" class="org-drawer-title">编辑</h3>
+        <button type="button" id="org-drawer-close" class="org-drawer-close" aria-label="关闭">×</button>
+      </div>
+      <div id="org-drawer-body" class="org-drawer-body"></div>
+      <div id="org-drawer-footer" class="org-drawer-footer"></div>
+    </div>
+  </div>
+
+  <div id="org-drawer-left-overlay" class="org-drawer-overlay org-drawer-overlay--from-left" aria-hidden="true">
+    <div class="org-drawer org-drawer--from-left" role="dialog" aria-modal="true">
+      <div class="org-drawer-header">
+        <h3 id="org-drawer-left-title" class="org-drawer-title">新增技师</h3>
+        <button type="button" id="org-drawer-left-close" class="org-drawer-close" aria-label="关闭">×</button>
+      </div>
+      <div id="org-drawer-left-body" class="org-drawer-body"></div>
+      <div id="org-drawer-left-footer" class="org-drawer-footer"></div>
+    </div>
+  </div>
+
+  <script>
+    const TOKEN_KEY = "org_access_token";
+    const token = localStorage.getItem(TOKEN_KEY) || "";
+    if (!token) window.location.href = "/org/login/";
+    const views = ["dashboard","my_verify","tech_manage","service_manage","messages"];
+    let techRows = [];
+    let serviceRows = [];
+    let categoryTreeCache = null;
+    let currentOrgLicenseUrl = "";
+    let pendingOrgLicenseFile = null;
+    let orgProfileLocked = false;
+    let orgProfileStatus = "uninitiated";
+    const LISTING_MAX_COVERS = 6;
+    const TECH_MAX_LICENSE_FILES = 6;
+    const ORG_REGION_FALLBACK_TREE = {
+      "江西省": {
+        "赣州市": ["章贡区", "南康区", "赣县区"]
+      }
+    };
+    const ORG_REGION_DEFAULT = { province_code: "360000", city_code: "360700", district_code: "360702" };
+    let regionApiCache = { provinces: null, cities: {}, districts: {}, default: ORG_REGION_DEFAULT };
+
+    const orgDrawerOverlay = document.getElementById("org-drawer-overlay");
+    const orgDrawerTitle = document.getElementById("org-drawer-title");
+    const orgDrawerBody = document.getElementById("org-drawer-body");
+    const orgDrawerFooter = document.getElementById("org-drawer-footer");
+    const orgDrawerLeftOverlay = document.getElementById("org-drawer-left-overlay");
+    const orgDrawerLeftTitle = document.getElementById("org-drawer-left-title");
+    const orgDrawerLeftBody = document.getElementById("org-drawer-left-body");
+    const orgDrawerLeftFooter = document.getElementById("org-drawer-left-footer");
+
+    function closeOrgDrawerLeft() {
+      orgDrawerLeftOverlay.classList.remove("active");
+      orgDrawerLeftOverlay.setAttribute("aria-hidden", "true");
+    }
+    function openOrgDrawerLeft(title, bodyHtml, footerHtml) {
+      closeOrgDrawer();
+      orgDrawerLeftTitle.textContent = title;
+      orgDrawerLeftBody.innerHTML = bodyHtml;
+      orgDrawerLeftFooter.innerHTML = footerHtml;
+      orgDrawerLeftOverlay.classList.add("active");
+      orgDrawerLeftOverlay.setAttribute("aria-hidden", "false");
+    }
+    function openOrgDrawer(title, bodyHtml, footerHtml) {
+      closeOrgDrawer();
+      orgDrawerTitle.textContent = title;
+      orgDrawerBody.innerHTML = bodyHtml;
+      orgDrawerFooter.innerHTML = footerHtml;
+      orgDrawerOverlay.classList.add("active");
+      orgDrawerOverlay.setAttribute("aria-hidden", "false");
+    }
+    function closeOrgDrawer() {
+      orgDrawerOverlay.classList.remove("active");
+      orgDrawerOverlay.setAttribute("aria-hidden", "true");
+    }
+
+    function setMsg(id, text, ok = false) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      // 页面内不显示提示文案，只保留右上角 toast
+      el.textContent = "";
+      el.classList.remove("ok");
+      if (text) {
+        const t = String(text);
+        let type = ok ? "success" : "error";
+        if (!ok && (/请|提示|建议|注意|未/.test(t) && !/失败|错误|异常/.test(t))) type = "warning";
+        showToast(t, type);
+      }
+    }
+    function showToast(message, type = "info", duration = 3000) {
+      const text = String(message || "").trim();
+      if (!text) return;
+      let wrap = document.getElementById("org-toast-wrap");
+      if (!wrap) {
+        wrap = document.createElement("div");
+        wrap.id = "org-toast-wrap";
+        wrap.className = "org-toast-wrap";
+        document.body.appendChild(wrap);
+      }
+      const toast = document.createElement("div");
+      toast.className = `org-toast ${type}`;
+      toast.textContent = text;
+      wrap.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add("show"));
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 220);
+      }, Math.max(1200, Number(duration) || 3000));
+    }
+    if (!window.__orgAlertPatched) {
+      window.__orgAlertPatched = true;
+      const nativeAlert = window.alert ? window.alert.bind(window) : null;
+      window.alert = function(msg) {
+        const text = String(msg || "").trim();
+        if (!text) return;
+        if (typeof showToast === "function") showToast(text, "error");
+        else if (nativeAlert) nativeAlert(text);
+      };
+    }
+    function s(v) { return String(v ?? ""); }
+    function statusText(v) {
+      return { uninitiated:"未发起", pending:"待审核", approved:"已通过", rejected:"未通过", active:"已关联", inactive:"已解绑", draft:"草稿", published:"已发布", disabled:"已下架" }[v] || v || "-";
+    }
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+    function escapeAttr(value) {
+      return escapeHtml(value);
+    }
+    async function api(path, options = {}) {
+      const isFormData = options.body instanceof FormData;
+      const headers = Object.assign(isFormData ? {} : { "Content-Type":"application/json" }, options.headers || {}, { Authorization: `Bearer ${token}` });
+      const resp = await fetch(path, Object.assign({}, options, { headers }));
+      if (resp.status === 401) {
+        localStorage.removeItem(TOKEN_KEY);
+        window.location.href = "/org/login/";
+        throw new Error("登录已失效，请重新登录");
+      }
+      const text = await resp.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_) { data = { detail: text }; }
+      if (!resp.ok) {
+        const raw = data.detail != null ? String(data.detail) : "请求失败";
+        const isHtml = /<html[\s>]/i.test(raw);
+        const msg = isHtml ? `服务端异常（HTTP ${resp.status}），请稍后重试或联系管理员` : raw;
+        throw new Error(msg);
+      }
+      return data;
+    }
+    function switchView(key) {
+      views.forEach((x) => {
+        document.getElementById(`view-${x}`).classList.toggle("active", x === key);
+      });
+      document.querySelectorAll(".menu-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.getAttribute("data-view") === key);
+      });
+    }
+
+    document.getElementById("org-drawer-close").addEventListener("click", closeOrgDrawer);
+    orgDrawerOverlay.addEventListener("click", (e) => {
+      if (e.target === orgDrawerOverlay) closeOrgDrawer();
+    });
+    document.getElementById("org-drawer-left-close").addEventListener("click", closeOrgDrawerLeft);
+    orgDrawerLeftOverlay.addEventListener("click", (e) => {
+      if (e.target === orgDrawerLeftOverlay) closeOrgDrawerLeft();
+    });
+
+    async function loadCategoryTree() {
+      if (categoryTreeCache) return categoryTreeCache;
+      const resp = await fetch("/api/public/categories/tree");
+      if (!resp.ok) throw new Error("分类数据加载失败");
+      const data = await resp.json();
+      categoryTreeCache = data.tree || [];
+      return categoryTreeCache;
+    }
+    function buildPrimaryCategoryOptions(tree, selectedPrimaryId) {
+      return (tree || [])
+        .map((node) => `<option value="${node.id}" ${String(node.id) === String(selectedPrimaryId) ? "selected" : ""}>${escapeHtml(node.name)}</option>`)
+        .join("");
+    }
+    function buildSecondaryCategoryOptions(tree, primaryId, selectedSecondaryId) {
+      const primary = (tree || []).find((x) => String(x.id) === String(primaryId));
+      const children = primary && Array.isArray(primary.children) ? primary.children : [];
+      const opts = children
+        .map((node) => `<option value="${node.id}" ${String(node.id) === String(selectedSecondaryId) ? "selected" : ""}>${escapeHtml(node.name)}</option>`)
+        .join("");
+      return `<option value="">请选择二级分类</option>${opts}`;
+    }
+    function resolveCategorySelection(tree, categoryId) {
+      for (const p of tree || []) {
+        if (String(p.id) === String(categoryId)) {
+          return { primaryId: p.id, secondaryId: "" };
+        }
+        for (const c of p.children || []) {
+          if (String(c.id) === String(categoryId)) {
+            return { primaryId: p.id, secondaryId: c.id };
+          }
+        }
+      }
+      return { primaryId: (tree && tree[0] && tree[0].id) || "", secondaryId: "" };
+    }
+
+    async function openTechEditDrawer(relationId) {
+      setMsg("bind-msg", "");
+      const item = await api("/api/accounts/organization/technicians?relation_id=" + encodeURIComponent(relationId), { method: "GET" });
+      const workYearMap = { 0: "一年以下", 1: "1-3年", 2: "3-5年", 3: "5-10年", 4: "10年以上" };
+      const workYearOptions = Object.keys(workYearMap)
+        .map((val) => `<option value="${val}" ${String(item.work_years) === val ? "selected" : ""}>${workYearMap[val]}</option>`)
+        .join("");
+      const row = (label, inner) => `<div class="org-form-grid"><label>${escapeHtml(label)}</label><div>${inner}</div></div>`;
+      const imgSlot = (idBase, label, url) => {
+        const has = !!url;
+        return `<div><div style="color:#64748b;font-size:12px;margin-bottom:4px;">${escapeHtml(label)}</div>
+          <div id="${idBase}_trigger" class="org-img-slot" style="position:relative;">
+            <img id="${idBase}_preview" src="${has ? escapeAttr(url) : ""}" style="${has ? "" : "display:none;"}" alt="" />
+            <span id="${idBase}_ph" class="org-img-ph" style="${has ? "display:none;" : ""}">点击上传或替换</span>
+            <button id="${idBase}_remove" type="button" class="zy-thumb-remove" style="${has ? "" : "display:none;"}" title="删除">×</button>
+          </div>
+          <input id="${idBase}_file" type="file" accept="image/*" style="display:none;" /></div>`;
+      };
+      const bodyHtml = `
+        <div class="org-field-title">基本信息</div>
+        ${row("关联状态", `<span>${escapeHtml(statusText(item.bind_status))}</span>`)}
+        ${row("认证状态", `<span>${escapeHtml(statusText(item.verification_status))}</span>`)}
+        ${row("姓名", `<input id="ote_real_name" class="ipt" value="${escapeAttr(item.real_name)}" />`)}
+        ${row("手机号", `<input id="ote_phone" class="ipt" value="${escapeAttr(item.phone)}" />`)}
+        ${row("身份证号", `<input id="ote_id_card_no" class="ipt" value="${escapeAttr(item.id_card_no)}" />`)}
+        ${row("性别", `<select id="ote_gender" class="ipt"><option value="">未填写</option><option value="male" ${item.gender === "male" ? "selected" : ""}>男</option><option value="female" ${item.gender === "female" ? "selected" : ""}>女</option></select>`)}
+        ${row("工作年限", `<select id="ote_work_years" class="ipt">${workYearOptions}</select>`)}
+        ${row("服务类型", `<input id="ote_service_types" class="ipt" value="${escapeAttr(item.service_types)}" />`)}
+        ${row("服务区域", `<input id="ote_service_areas" class="ipt" value="${escapeAttr(item.service_areas)}" />`)}
+        ${row("简介", `<textarea id="ote_bio" class="txt" style="min-height:80px;">${escapeHtml(item.bio)}</textarea>`)}
+        <div class="org-field-title">证件与材料（点击图片替换）</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          ${imgSlot("ote_avatar", "形象照", item.avatar)}
+          ${imgSlot("ote_health", "健康证", item.health_cert)}
+          ${imgSlot("ote_idf", "身份证正面", item.id_card_front)}
+          ${imgSlot("ote_idb", "身份证反面", item.id_card_back)}
+        </div>
+        <div class="org-field-title">执照（可删除、可追加）</div>
+        <div id="ote_lic_trigger" class="org-cover-dropzone"></div>
+        <input id="ote_licenses" type="file" accept="image/*" multiple style="display:none;" />
+      `;
+      openOrgDrawer("编辑技师", bodyHtml, `<button type="button" class="btn alt" id="ote_cancel">取消</button><button type="button" class="btn" id="ote_save">保存</button>`);
+      const bindImg = (base) => {
+        const tr = document.getElementById(base + "_trigger");
+        const fi = document.getElementById(base + "_file");
+        const pr = document.getElementById(base + "_preview");
+        const ph = document.getElementById(base + "_ph");
+        const rm = document.getElementById(base + "_remove");
+        let removed = false;
+        tr.addEventListener("click", (e) => {
+          if (e.target.closest(`#${base}_remove`)) return;
+          fi.click();
+        });
+        if (rm) {
+          rm.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fi.value = "";
+            pr.src = "";
+            pr.style.display = "none";
+            if (ph) ph.style.display = "";
+            rm.style.display = "none";
+            removed = true;
+          });
+        }
+        fi.addEventListener("change", () => {
+          const file = fi.files && fi.files[0];
+          if (!file) return;
+          pr.src = URL.createObjectURL(file);
+          pr.style.display = "block";
+          if (ph) ph.style.display = "none";
+          if (rm) rm.style.display = "";
+          removed = false;
+        });
+        return {
+          getRemoved: () => removed,
+          getFile: () => (fi.files && fi.files[0]) || null,
+        };
+      };
+      const imageBindings = {
+        avatar: bindImg("ote_avatar"),
+        health: bindImg("ote_health"),
+        idf: bindImg("ote_idf"),
+        idb: bindImg("ote_idb"),
+      };
+      const lt = document.getElementById("ote_lic_trigger");
+      const li = document.getElementById("ote_licenses");
+      let existingLicenses = (Array.isArray(item.licenses) ? item.licenses : [])
+        .map((license) => {
+          if (typeof license === "string") return { url: license };
+          return { url: (license && license.url) || "" };
+        })
+        .filter((license) => !!license.url);
+      let selectedLicenseFiles = [];
+      const renderUploadTile = () => '<button type="button" class="zy-upload-plus-tile" id="ote_lic_add" title="上传执照">+</button>';
+      const renderSelectedLicenses = () => {
+        const existingHtml = existingLicenses
+          .map((license, index) => `<div class="zy-thumb-item"><img src="${escapeAttr(license.url)}" class="org-thumb" alt="" /><button type="button" class="zy-thumb-remove" data-existing-license-index="${index}" title="删除">×</button></div>`)
+          .join("");
+        const selectedHtml = selectedLicenseFiles
+          .map((file, index) => {
+            const url = URL.createObjectURL(file);
+            return `<div class="zy-thumb-item"><img src="${url}" class="org-thumb" alt="" /><button type="button" class="zy-thumb-remove" data-license-index="${index}" title="删除">×</button></div>`;
+          })
+          .join("");
+        const totalLicenses = existingLicenses.length + selectedLicenseFiles.length;
+        const canAddMore = totalLicenses < TECH_MAX_LICENSE_FILES;
+        const hintHtml = selectedLicenseFiles.length || existingLicenses.length
+          ? '<div style="grid-column:1/-1;width:100%;color:#94a3b8;font-size:12px;">支持删除已上传图片；新选择的文件将追加上传</div>'
+          : "";
+        const uploadTileHtml = canAddMore ? renderUploadTile() : "";
+        lt.innerHTML = `${existingHtml}${selectedHtml}${uploadTileHtml}${hintHtml}`;
+      };
+      renderSelectedLicenses();
+      li.addEventListener("change", () => {
+        const incoming = Array.from(li.files || []);
+        const remain = Math.max(0, TECH_MAX_LICENSE_FILES - existingLicenses.length - selectedLicenseFiles.length);
+        if (remain > 0) {
+          selectedLicenseFiles = selectedLicenseFiles.concat(incoming.slice(0, remain));
+        }
+        li.value = "";
+        renderSelectedLicenses();
+      });
+      lt.addEventListener("click", (e) => {
+        if (e.target.closest("#ote_lic_add")) {
+          li.click();
+          return;
+        }
+        const existingBtn = e.target.closest("[data-existing-license-index]");
+        if (existingBtn) {
+          e.preventDefault();
+          const idx = Number(existingBtn.getAttribute("data-existing-license-index"));
+          if (Number.isNaN(idx)) return;
+          existingLicenses.splice(idx, 1);
+          renderSelectedLicenses();
+          return;
+        }
+        const btn = e.target.closest("[data-license-index]");
+        if (!btn) return;
+        e.preventDefault();
+        const idx = Number(btn.getAttribute("data-license-index"));
+        if (Number.isNaN(idx)) return;
+        selectedLicenseFiles.splice(idx, 1);
+        renderSelectedLicenses();
+      });
+      document.getElementById("ote_cancel").addEventListener("click", closeOrgDrawer);
+      document.getElementById("ote_save").addEventListener("click", async () => {
+        try {
+          const fd = new FormData();
+          fd.append("relation_id", relationId);
+          fd.append("real_name", document.getElementById("ote_real_name").value.trim());
+          fd.append("phone", document.getElementById("ote_phone").value.trim());
+          fd.append("id_card_no", document.getElementById("ote_id_card_no").value.trim());
+          fd.append("gender", document.getElementById("ote_gender").value);
+          fd.append("work_years", document.getElementById("ote_work_years").value);
+          fd.append("service_types", document.getElementById("ote_service_types").value.trim());
+          fd.append("service_areas", document.getElementById("ote_service_areas").value.trim());
+          fd.append("bio", document.getElementById("ote_bio").value.trim());
+          const a = imageBindings.avatar.getFile();
+          const h = imageBindings.health.getFile();
+          const f1 = imageBindings.idf.getFile();
+          const f2 = imageBindings.idb.getFile();
+          if (a) fd.append("avatar", a);
+          else if (imageBindings.avatar.getRemoved()) fd.append("remove_avatar", "1");
+          if (h) fd.append("health_cert", h);
+          else if (imageBindings.health.getRemoved()) fd.append("remove_health_cert", "1");
+          if (f1) fd.append("id_card_front", f1);
+          else if (imageBindings.idf.getRemoved()) fd.append("remove_id_card_front", "1");
+          if (f2) fd.append("id_card_back", f2);
+          else if (imageBindings.idb.getRemoved()) fd.append("remove_id_card_back", "1");
+          existingLicenses.forEach((license) => fd.append("kept_license_urls", license.url));
+          selectedLicenseFiles.forEach((f) => fd.append("licenses", f));
+          await api("/api/accounts/organization/technicians", { method: "PATCH", body: fd });
+          closeOrgDrawer();
+          await loadTechnicians();
+          await loadDashboard();
+          await loadMessages();
+        } catch (err) {
+          setMsg("bind-msg", err.message);
+        }
+      });
+    }
+
+    async function openServiceEditDrawer(listingId) {
+      const [item, tree] = await Promise.all([
+        api("/api/accounts/organization/services?listing_id=" + encodeURIComponent(listingId), { method: "GET" }),
+        loadCategoryTree(),
+      ]);
+      const selectedCategory = resolveCategorySelection(tree, item.category_id);
+      const primaryOpts = buildPrimaryCategoryOptions(tree, selectedCategory.primaryId);
+      const row = (label, inner) => `<div class="org-form-grid"><label>${escapeHtml(label)}</label><div>${inner}</div></div>`;
+      const covers = (item.cover_urls && item.cover_urls.length) ? item.cover_urls : (item.cover_url ? [item.cover_url] : []);
+      const coversHtml = covers.length
+        ? covers.map((u) => `<img src="${escapeAttr(u)}" class="org-thumb" alt="" />`).join("")
+        : `<span class="org-img-ph" id="ose_cov_ph">点击上传封面组</span>`;
+      const bodyHtml = `
+        <div class="org-service-edit">
+          <div class="org-field-section">
+            <div class="org-field-title">基本信息</div>
+            ${row("发布者", `<span class="org-pub-badge">${escapeHtml(item.real_name || "—")}</span>`)}
+            ${row("服务标题", `<input id="ose_title" class="ipt" value="${escapeAttr(item.title)}" placeholder="填写服务名称" />`)}
+            ${row("服务分类", `<div class="org-price-pair"><div><label class="inner" for="ose_cat_primary">一级分类</label><select id="ose_cat_primary" class="ipt">${primaryOpts}</select></div><div><label class="inner" for="ose_cat_secondary">二级分类</label><select id="ose_cat_secondary" class="ipt"></select></div></div>`)}
+            ${row("上架状态", `<select id="ose_status" class="ipt">
+          <option value="draft" ${item.status === "draft" ? "selected" : ""}>草稿</option>
+          <option value="pending" ${item.status === "pending" ? "selected" : ""}>待审核</option>
+          <option value="published" ${item.status === "published" ? "selected" : ""}>已发布</option>
+          <option value="rejected" ${item.status === "rejected" ? "selected" : ""}>已驳回</option>
+          <option value="disabled" ${item.status === "disabled" ? "selected" : ""}>已下架</option>
+        </select><p class="org-form-hint">状态变更将按平台规则生效；不确定时可保持原状态。</p>`)}
+          </div>
+          <div class="org-field-section">
+            <div class="org-field-title">定价与联系</div>
+            ${row("价格与单位", `<div class="org-price-pair">
+              <div>
+                <label class="inner" for="ose_price">金额</label>
+                <input id="ose_price" class="ipt" value="${escapeAttr(item.listing_price || "")}" placeholder="例如 299.00" />
+              </div>
+              <div>
+                <label class="inner" for="ose_punit">单位</label>
+                <input id="ose_punit" class="ipt" value="${escapeAttr(item.listing_price_unit || "次")}" placeholder="次 / 小时 / 天" />
+              </div>
+            </div>`)}
+            ${row("服务区域", `<input id="ose_areas" class="ipt" value="${escapeAttr(item.service_areas)}" placeholder="可服务区域，如：朝阳区、全市" />`)}
+            ${row("联系方式", `<input id="ose_contact" class="ipt" value="${escapeAttr(item.contact_info)}" placeholder="电话或微信等" />`)}
+          </div>
+          <div class="org-field-section">
+            <div class="org-field-title">封面图片</div>
+            <div>
+              <div class="org-cover-sublabel">封面组（${LISTING_MAX_COVERS} 张内）</div>
+              <div id="ose_cov_trigger" class="org-cover-dropzone">
+                ${coversHtml}
+              </div>
+              <input id="ose_cov_files" type="file" accept="image/*" multiple style="display:none;" />
+            </div>
+          </div>
+          <div class="org-field-section">
+            <div class="org-field-title">服务描述</div>
+            <div class="org-desc-block">
+              <textarea id="ose_desc" class="txt" placeholder="介绍服务内容、流程、注意事项等">${escapeHtml(item.description)}</textarea>
+            </div>
+          </div>
+        </div>
+      `;
+      openOrgDrawer("编辑服务", bodyHtml, `<button type="button" class="btn alt" id="ose_cancel">取消</button><button type="button" class="btn" id="ose_save">保存</button>`);
+      const osePrimary = document.getElementById("ose_cat_primary");
+      const oseSecondary = document.getElementById("ose_cat_secondary");
+      const renderSecondaryOptions = () => {
+        oseSecondary.innerHTML = buildSecondaryCategoryOptions(tree, osePrimary.value, selectedCategory.secondaryId);
+      };
+      renderSecondaryOptions();
+      osePrimary.addEventListener("change", () => {
+        selectedCategory.secondaryId = "";
+        renderSecondaryOptions();
+      });
+
+      const ct = document.getElementById("ose_cov_trigger");
+      const cf = document.getElementById("ose_cov_files");
+      let existingCovers = covers.slice();
+      let selectedCoverFiles = [];
+      const renderUploadTile = () => '<button type="button" class="zy-upload-plus-tile" id="ose_cov_add" title="上传封面">+</button>';
+      const renderSelectedCovers = () => {
+        const existingHtml = existingCovers
+          .map((url, index) => `<div class="zy-thumb-item"><img src="${escapeAttr(url)}" class="org-thumb" alt="" /><button type="button" class="zy-thumb-remove" data-existing-cover-index="${index}" title="删除">×</button></div>`)
+          .join("");
+        const selectedHtml = selectedCoverFiles
+          .map((file, index) => {
+            const url = URL.createObjectURL(file);
+            return `<div class="zy-thumb-item"><img src="${url}" class="org-thumb" alt="" /><button type="button" class="zy-thumb-remove" data-cover-index="${index}" title="删除">×</button></div>`;
+          })
+          .join("");
+        const total = existingCovers.length + selectedCoverFiles.length;
+        const canAddMore = total < LISTING_MAX_COVERS;
+        const hintHtml = total
+          ? '<div style="grid-column:1/-1;width:100%;color:#94a3b8;font-size:12px;">支持删除已上传图片；新选择的文件将追加上传</div>'
+          : "";
+        const uploadTileHtml = canAddMore ? renderUploadTile() : "";
+        ct.innerHTML = `${existingHtml}${selectedHtml}${uploadTileHtml}${hintHtml}`;
+      };
+      renderSelectedCovers();
+      cf.addEventListener("change", () => {
+        const incoming = Array.from(cf.files || []);
+        const remain = Math.max(0, LISTING_MAX_COVERS - existingCovers.length - selectedCoverFiles.length);
+        if (remain > 0) selectedCoverFiles = selectedCoverFiles.concat(incoming.slice(0, remain));
+        cf.value = "";
+        renderSelectedCovers();
+      });
+      ct.addEventListener("click", (e) => {
+        if (e.target.closest("#ose_cov_add")) {
+          cf.click();
+          return;
+        }
+        const existingBtn = e.target.closest("[data-existing-cover-index]");
+        if (existingBtn) {
+          e.preventDefault();
+          const idx = Number(existingBtn.getAttribute("data-existing-cover-index"));
+          if (Number.isNaN(idx)) return;
+          existingCovers.splice(idx, 1);
+          renderSelectedCovers();
+          return;
+        }
+        const btn = e.target.closest("[data-cover-index]");
+        if (!btn) return;
+        e.preventDefault();
+        const idx = Number(btn.getAttribute("data-cover-index"));
+        if (Number.isNaN(idx)) return;
+        selectedCoverFiles.splice(idx, 1);
+        renderSelectedCovers();
+      });
+      document.getElementById("ose_cancel").addEventListener("click", closeOrgDrawer);
+      document.getElementById("ose_save").addEventListener("click", async () => {
+        try {
+          const fd = new FormData();
+          fd.append("listing_id", listingId);
+          fd.append("title", document.getElementById("ose_title").value.trim());
+          const selectedSecondary = document.getElementById("ose_cat_secondary").value;
+          const selectedPrimary = document.getElementById("ose_cat_primary").value;
+          fd.append("category_id", String(selectedSecondary || selectedPrimary));
+          fd.append("listing_price", document.getElementById("ose_price").value.trim());
+          fd.append("listing_price_unit", document.getElementById("ose_punit").value.trim());
+          fd.append("service_areas", document.getElementById("ose_areas").value.trim());
+          fd.append("contact_info", document.getElementById("ose_contact").value.trim());
+          fd.append("status", document.getElementById("ose_status").value);
+          fd.append("description", document.getElementById("ose_desc").value.trim());
+          existingCovers.forEach((url) => fd.append("kept_cover_urls", url));
+          selectedCoverFiles.forEach((f) => fd.append("cover_images", f));
+          await api("/api/accounts/organization/services", { method: "PATCH", body: fd });
+          closeOrgDrawer();
+          await loadServices();
+          await loadDashboard();
+          await loadMessages();
+        } catch (err) {
+          showToast(err.message || "操作失败", "error");
+        }
+      });
+    }
+
+
+
+    async function fetchRegions(level, parentCode = "") {
+      const params = new URLSearchParams({ level });
+      if (parentCode) params.append("parent_code", parentCode);
+      const data = await api(`/api/accounts/regions?${params.toString()}`, { method: "GET" });
+      if (data && data.default) regionApiCache.default = data.default;
+      return Array.isArray(data.items) ? data.items : [];
+    }
+
+    function getFallbackRegionItems(level, parentCode = "") {
+      if (level === "province") {
+        return Object.keys(ORG_REGION_FALLBACK_TREE).map((name, i) => ({ code: String(i + 1), name }));
+      }
+      if (level === "city") {
+        const pName = Object.keys(ORG_REGION_FALLBACK_TREE)[0] || "";
+        return Object.keys(ORG_REGION_FALLBACK_TREE[pName] || {}).map((name, i) => ({ code: String(i + 1), name }));
+      }
+      if (level === "district") {
+        const pName = Object.keys(ORG_REGION_FALLBACK_TREE)[0] || "";
+        const cName = Object.keys(ORG_REGION_FALLBACK_TREE[pName] || {})[0] || "";
+        return (ORG_REGION_FALLBACK_TREE[pName] && ORG_REGION_FALLBACK_TREE[pName][cName] || []).map((name, i) => ({ code: String(i + 1), name }));
+      }
+      return [];
+    }
+
+    async function renderRegionSelectors(selectedProvinceCode = "", selectedCityCode = "", selectedDistrictCode = "") {
+      const pEl = document.getElementById("org-province");
+      const cEl = document.getElementById("org-city");
+      const dEl = document.getElementById("org-district");
+      if (!pEl || !cEl || !dEl) return;
+
+      if (!regionApiCache.provinces) {
+        try {
+          regionApiCache.provinces = await fetchRegions("province");
+        } catch (_e) {
+          regionApiCache.provinces = getFallbackRegionItems("province");
+        }
+      }
+
+      const provinces = regionApiCache.provinces || [];
+      const defaultProvince = regionApiCache.default && regionApiCache.default.province_code;
+      const provinceCode = selectedProvinceCode || defaultProvince || (provinces[0] && provinces[0].code) || "";
+      pEl.innerHTML = provinces.map((x) => `<option value="${x.code}" ${String(x.code) === String(provinceCode) ? "selected" : ""}>${x.name}</option>`).join("");
+
+      if (!regionApiCache.cities[provinceCode]) {
+        try {
+          regionApiCache.cities[provinceCode] = await fetchRegions("city", provinceCode);
+        } catch (_e) {
+          regionApiCache.cities[provinceCode] = getFallbackRegionItems("city", provinceCode);
+        }
+      }
+      const cities = regionApiCache.cities[provinceCode] || [];
+      const defaultCity = regionApiCache.default && regionApiCache.default.city_code;
+      const cityCode = selectedCityCode || defaultCity || (cities[0] && cities[0].code) || "";
+      cEl.innerHTML = cities.map((x) => `<option value="${x.code}" ${String(x.code) === String(cityCode) ? "selected" : ""}>${x.name}</option>`).join("");
+
+      if (!regionApiCache.districts[cityCode]) {
+        try {
+          regionApiCache.districts[cityCode] = await fetchRegions("district", cityCode);
+        } catch (_e) {
+          regionApiCache.districts[cityCode] = getFallbackRegionItems("district", cityCode);
+        }
+      }
+      const districts = regionApiCache.districts[cityCode] || [];
+      const defaultDistrict = regionApiCache.default && regionApiCache.default.district_code;
+      const districtCode = selectedDistrictCode || defaultDistrict || (districts[0] && districts[0].code) || "";
+      dEl.innerHTML = districts.map((x) => `<option value="${x.code}" ${String(x.code) === String(districtCode) ? "selected" : ""}>${x.name}</option>`).join("");
+    }
+
+    function parseAddressParts(address) {
+      const raw = String(address || "").trim();
+      const provinceCode = (document.getElementById("org-province") || {}).value || "";
+      const cityCode = (document.getElementById("org-city") || {}).value || "";
+      const districtCode = (document.getElementById("org-district") || {}).value || "";
+      const pName = (regionApiCache.provinces || []).find((x) => String(x.code) === String(provinceCode))?.name || "";
+      const cName = (regionApiCache.cities[provinceCode] || []).find((x) => String(x.code) === String(cityCode))?.name || "";
+      const dName = (regionApiCache.districts[cityCode] || []).find((x) => String(x.code) === String(districtCode))?.name || "";
+      const detail = raw.replace(pName, "").replace(cName, "").replace(dName, "").trim();
+      return { provinceCode, cityCode, districtCode, detail };
+    }
+
+    function composeAddressValue() {
+      const provinceCode = (document.getElementById("org-province") || {}).value || "";
+      const cityCode = (document.getElementById("org-city") || {}).value || "";
+      const districtCode = (document.getElementById("org-district") || {}).value || "";
+      const detail = (document.getElementById("org-address-detail") || {}).value || "";
+      const pName = (regionApiCache.provinces || []).find((x) => String(x.code) === String(provinceCode))?.name || "";
+      const cName = (regionApiCache.cities[provinceCode] || []).find((x) => String(x.code) === String(cityCode))?.name || "";
+      const dName = (regionApiCache.districts[cityCode] || []).find((x) => String(x.code) === String(districtCode))?.name || "";
+      return `${pName}${cName}${dName}${String(detail).trim()}`.trim();
+    }
+
+    function findCodeByName(items, name) {
+      const hit = (items || []).find((x) => String(x.name || "") === String(name || ""));
+      return hit ? hit.code : "";
+    }
+
+    async function preselectAddressByText(address) {
+      const raw = String(address || "").trim();
+      await renderRegionSelectors();
+      const provinces = regionApiCache.provinces || [];
+      let pCode = "";
+      let cCode = "";
+      let dCode = "";
+      for (const p of provinces) {
+        if (!raw.includes(p.name)) continue;
+        pCode = p.code;
+        await renderRegionSelectors(pCode);
+        const cities = regionApiCache.cities[pCode] || [];
+        for (const c of cities) {
+          if (!raw.includes(c.name)) continue;
+          cCode = c.code;
+          await renderRegionSelectors(pCode, cCode);
+          const districts = regionApiCache.districts[cCode] || [];
+          for (const d of districts) {
+            if (raw.includes(d.name)) {
+              dCode = d.code;
+              break;
+            }
+          }
+          break;
+        }
+        break;
+      }
+      await renderRegionSelectors(pCode || "", cCode || "", dCode || "");
+      const pName = (regionApiCache.provinces || []).find((x) => String(x.code) === String(pCode || document.getElementById("org-province").value))?.name || "";
+      const cName = (regionApiCache.cities[pCode || document.getElementById("org-province").value] || []).find((x) => String(x.code) === String(cCode || document.getElementById("org-city").value))?.name || "";
+      const dName = (regionApiCache.districts[cCode || document.getElementById("org-city").value] || []).find((x) => String(x.code) === String(dCode || document.getElementById("org-district").value))?.name || "";
+      return raw.replace(pName, "").replace(cName, "").replace(dName, "").trim();
+    }
+
+    function renderOrgVerifyStatus(status) {
+      const wrap = document.getElementById("org-verify-status");
+      const badge = document.getElementById("org-status-badge");
+      const title = document.getElementById("org-status-title");
+      const desc = document.getElementById("org-status-desc");
+      if (!wrap || !badge || !title || !desc) return;
+      const map = {
+        approved: { cls: "is-approved", badge: "认证成功", title: "恭喜您，机构已认证通过！", desc: "当前资料已锁定。如需变更，请提交资料变更申请。" },
+        pending: { cls: "is-pending", badge: "待审核", title: "资料已提交，等待平台审核", desc: "审核期间请保持联系电话畅通，结果会在后台状态更新。" },
+        rejected: { cls: "is-rejected", badge: "审核失败", title: "本次认证未通过，请按反馈修改后重提", desc: "请完善资料与证照信息后重新提交认证。" },
+        uninitiated: { cls: "is-uninitiated", badge: "未发起认证", title: "请完善资料并提交认证", desc: "认证通过后可在平台展示机构与服务能力。" },
+      };
+      const cfg = map[status] || map.uninitiated;
+      wrap.className = `org-verify-status ${cfg.cls}`;
+      badge.textContent = cfg.badge;
+      title.textContent = cfg.title;
+      desc.textContent = cfg.desc;
+    }
+
+    function renderOrgLicenseDropzone() {
+      const dz = document.getElementById("org-license-dropzone");
+      if (!dz) return;
+      const hasPending = !!pendingOrgLicenseFile;
+      const pendingUrl = hasPending ? URL.createObjectURL(pendingOrgLicenseFile) : "";
+      const previewUrl = hasPending ? pendingUrl : currentOrgLicenseUrl;
+      const hasPreview = !!previewUrl;
+      const uploadTile = orgProfileLocked || hasPreview
+        ? ""
+        : '<button type="button" class="zy-upload-plus-tile" id="org_license_add" title="上传执照">+</button>';
+      const previewHtml = hasPreview
+        ? `<div class="zy-thumb-item"><img src="${escapeAttr(previewUrl)}" class="org-thumb" alt="" />${orgProfileLocked ? "" : '<button type="button" class="zy-thumb-remove" id="org_license_remove" title="删除">×</button>'}</div>`
+        : "";
+      dz.innerHTML = `${previewHtml}${uploadTile}`;
+    }
+
+    function applyOrgProfileLock() {
+      const isApproved = orgProfileStatus === "approved";
+      const isPending = orgProfileStatus === "pending";
+      const isRejected = orgProfileStatus === "rejected";
+      const locked = isApproved || isPending;
+      ["org-company-name", "org-contact-person", "org-contact-phone", "org-license-no", "org-province", "org-city", "org-district", "org-address-detail"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = locked;
+      });
+      const saveBtn = document.getElementById("btn-save-org");
+      const submitBtn = document.getElementById("btn-submit-org-verify");
+      const actions = document.getElementById("org-verify-actions");
+      if (actions) actions.style.display = (isApproved || isPending) ? "none" : "";
+      if (saveBtn) {
+        saveBtn.style.display = isRejected ? "none" : "";
+        saveBtn.disabled = locked;
+      }
+      if (submitBtn) {
+        submitBtn.textContent = isRejected ? "重新提交认证" : "提交机构认证";
+        submitBtn.disabled = locked;
+      }
+      if (isApproved) {
+        setMsg("org-msg", "机构已认证通过，当前不可编辑或重复提交");
+      }
+    }
+
+    async function loadDashboard() {
+      const data = await api("/api/accounts/organization/dashboard", { method: "GET" });
+      const o = data.overview || {};
+      const todo = data.todo || {};
+      document.getElementById("kpi-tech-pending").textContent = s(o.technicians_pending_verify || 0);
+      document.getElementById("kpi-tech-total").textContent = s(o.technicians_total || 0);
+      document.getElementById("kpi-svc-total").textContent = s(o.services_total || 0);
+      document.getElementById("kpi-msg-total").textContent = s((todo.pending_unbind_approvals || 0) + (todo.pending_technician_verifications || 0) + (todo.pending_service_audits || 0));
+    }
+
+    async function loadOrgProfile() {
+      const data = await api("/api/accounts/organization/profile", { method: "GET" });
+      orgProfileStatus = data.verification_status || "uninitiated";
+      orgProfileLocked = orgProfileStatus === "approved";
+      currentOrgLicenseUrl = data.business_license || "";
+      pendingOrgLicenseFile = null;
+      document.getElementById("org-company-name").value = s(data.company_name);
+      document.getElementById("org-contact-person").value = s(data.contact_person);
+      document.getElementById("org-contact-phone").value = s(data.contact_phone);
+      const detailAddr = await preselectAddressByText(data.address);
+      document.getElementById("org-address-detail").value = s(detailAddr);
+      document.getElementById("org-license-no").value = s(data.business_license_number);
+      renderOrgVerifyStatus(data.verification_status);
+      renderOrgLicenseDropzone();
+      applyOrgProfileLock();
+    }
+    async function saveOrgProfile(silent = false) {
+      const fd = new FormData();
+      fd.append("company_name", document.getElementById("org-company-name").value.trim());
+      fd.append("contact_person", document.getElementById("org-contact-person").value.trim());
+      fd.append("contact_phone", document.getElementById("org-contact-phone").value.trim());
+      fd.append("address", composeAddressValue());
+      fd.append("business_license_number", document.getElementById("org-license-no").value.trim());
+      if (pendingOrgLicenseFile) fd.append("business_license", pendingOrgLicenseFile);
+      if (!pendingOrgLicenseFile && !currentOrgLicenseUrl) fd.append("remove_business_license", "1");
+      await api("/api/accounts/organization/profile", { method: "PATCH", body: fd });
+      if (!silent) setMsg("org-msg", "机构资料已保存", true);
+      await loadOrgProfile();
+      await loadDashboard();
+    }
+    async function submitOrgVerification() {
+      if (orgProfileStatus === "rejected") {
+        await saveOrgProfile(true);
+      }
+      const data = await api("/api/accounts/organization/verification/submit", { method: "POST", body: "{}" });
+      setMsg("org-msg", "已提交机构认证，状态：" + statusText(data.verification_status), true);
+      await loadOrgProfile();
+      await loadMessages();
+    }
+
+    async function loadTechnicians() {
+      techRows = await api("/api/accounts/organization/technicians", { method: "GET" });
+      const tbody = document.getElementById("tech-table-body");
+      if (!techRows.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#94a3b8;">暂无技师绑定数据</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = techRows.map((x) => `
+        <tr>
+          <td>${x.relation_id || "-"}</td><td>${x.id}</td><td>${x.real_name || "-"}</td><td>${x.phone || "-"}</td>
+          <td>${statusText(x.verification_status)}</td><td>${statusText(x.status)}</td>
+          <td class="row-btns">
+            <button class="btn alt" data-act="edit-tech" data-rel="${x.relation_id}">编辑</button>
+            <button class="btn warn" data-act="remove-tech" data-rel="${x.relation_id}">解绑</button>
+            ${x.status === "pending" ? `<button class="btn" data-act="approve-unbind" data-rel="${x.relation_id}">同意解绑</button><button class="btn alt" data-act="reject-unbind" data-rel="${x.relation_id}">拒绝解绑</button>` : ""}
+          </td>
+        </tr>
+      `).join("");
+    }
+    function openNewTechnicianDrawer() {
+      if (orgProfileStatus !== "approved") {
+        showToast("机构认证通过后才可新增技师", "warning");
+        return;
+      }
+      setMsg("bind-msg", "");
+      const row = (label, inner) => `<div class="org-form-grid"><label>${escapeHtml(label)}</label><div>${inner}</div></div>`;
+      const imgSlot = (idBase, label, required = false) => `<div><div style="color:#64748b;font-size:12px;margin-bottom:4px;">${escapeHtml(label)}${required ? ' *' : ''}</div>
+        <div id="${idBase}_trigger" class="org-img-slot" style="position:relative;">
+          <img id="${idBase}_preview" src="" style="display:none;" alt="" />
+          <span id="${idBase}_ph" class="org-img-ph">点击上传</span>
+          <button id="${idBase}_remove" type="button" class="zy-thumb-remove" style="display:none;" title="删除">×</button>
+        </div>
+        <input id="${idBase}_file" type="file" accept="image/*" style="display:none;" />
+      </div>`;
+      const bodyHtml = `
+        <div id="ntech-msg" class="msg"></div>
+        <p class="org-tech-lead">机构代注册并提交认证资料（字段与运营后台一致）</p>
+        <div class="org-service-edit">
+          <div class="org-field-section">
+            <div class="org-field-title">基本信息</div>
+            ${row("手机号", `<input id="ntech-phone" class="ipt" type="tel" inputmode="numeric" autocomplete="tel" placeholder="11位手机号" />`)}
+            ${row("密码", `<input id="ntech-password" class="ipt" type="password" autocomplete="new-password" placeholder="不少于6位" />`)}
+            ${row("姓名", `<input id="ntech-real-name" class="ipt" placeholder="真实姓名" />`)}
+            ${row("身份证号", `<input id="ntech-id-card-no" class="ipt" placeholder="选填" />`)}
+            ${row("性别", `<select id="ntech-gender" class="ipt"><option value="">未填写</option><option value="male">男</option><option value="female">女</option></select>`)}
+            ${row("工作年限", `<select id="ntech-work-years" class="ipt"><option value="0">一年以下</option><option value="1">1-3年</option><option value="2">3-5年</option><option value="3">5-10年</option><option value="4">10年以上</option></select>`)}
+            ${row("服务类型", `<input id="ntech-service-types" class="ipt" placeholder="多项用顿号分隔" />`)}
+            ${row("服务区域", `<input id="ntech-service-areas" class="ipt" />`)}
+            ${row("简介", `<textarea id="ntech-bio" class="txt" placeholder="个人简介"></textarea>`)}
+          </div>
+          <div class="org-field-section">
+            <div class="org-field-title">证件与材料</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              ${imgSlot("ntech_idf", "身份证正面", true)}
+              ${imgSlot("ntech_idb", "身份证反面", true)}
+              ${imgSlot("ntech_avatar", "头像")}
+              ${imgSlot("ntech_health", "健康证")}
+            </div>
+            <div class="org-field-title" style="margin-top:1rem;">执照（可删除、可追加）</div>
+            <div id="ntech_lic_trigger" class="org-cover-dropzone"></div>
+            <input id="ntech_licenses" type="file" accept="image/*" multiple style="display:none;" />
+          </div>
+        </div>
+      `;
+      openOrgDrawer("新增技师", bodyHtml, `<button type="button" class="btn alt" id="ntech-cancel">取消</button><button type="button" class="btn" id="ntech-submit">提交注册与认证</button>`);
+
+      const bindImg = (base) => {
+        const tr = document.getElementById(base + "_trigger");
+        const fi = document.getElementById(base + "_file");
+        const pr = document.getElementById(base + "_preview");
+        const ph = document.getElementById(base + "_ph");
+        const rm = document.getElementById(base + "_remove");
+        tr.addEventListener("click", (e) => {
+          if (e.target.closest(`#${base}_remove`)) return;
+          fi.click();
+        });
+        rm.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          fi.value = "";
+          pr.src = "";
+          pr.style.display = "none";
+          ph.style.display = "";
+          rm.style.display = "none";
+        });
+        fi.addEventListener("change", () => {
+          const file = fi.files && fi.files[0];
+          if (!file) return;
+          pr.src = URL.createObjectURL(file);
+          pr.style.display = "block";
+          ph.style.display = "none";
+          rm.style.display = "";
+        });
+      };
+      ["ntech_idf", "ntech_idb", "ntech_avatar", "ntech_health"].forEach(bindImg);
+
+      const lt = document.getElementById("ntech_lic_trigger");
+      const li = document.getElementById("ntech_licenses");
+      let selectedLicenseFiles = [];
+      const renderUploadTile = () => '<button type="button" class="zy-upload-plus-tile" id="ntech_lic_add" title="上传执照">+</button>';
+      const renderLicenses = () => {
+        const selectedHtml = selectedLicenseFiles
+          .map((file, index) => {
+            const url = URL.createObjectURL(file);
+            return `<div class="zy-thumb-item"><img src="${url}" class="org-thumb" alt="" /><button type="button" class="zy-thumb-remove" data-license-index="${index}" title="删除">×</button></div>`;
+          })
+          .join("");
+        const canAddMore = selectedLicenseFiles.length < TECH_MAX_LICENSE_FILES;
+        const uploadTileHtml = canAddMore ? renderUploadTile() : "";
+        lt.innerHTML = `${selectedHtml}${uploadTileHtml}`;
+      };
+      renderLicenses();
+      li.addEventListener("change", () => {
+        const incoming = Array.from(li.files || []);
+        const remain = Math.max(0, TECH_MAX_LICENSE_FILES - selectedLicenseFiles.length);
+        if (remain > 0) selectedLicenseFiles = selectedLicenseFiles.concat(incoming.slice(0, remain));
+        li.value = "";
+        renderLicenses();
+      });
+      lt.addEventListener("click", (e) => {
+        if (e.target.closest("#ntech_lic_add")) {
+          li.click();
+          return;
+        }
+        const btn = e.target.closest("[data-license-index]");
+        if (!btn) return;
+        e.preventDefault();
+        const idx = Number(btn.getAttribute("data-license-index"));
+        if (Number.isNaN(idx)) return;
+        selectedLicenseFiles.splice(idx, 1);
+        renderLicenses();
+      });
+
+      document.getElementById("ntech-cancel").addEventListener("click", closeOrgDrawer);
+      document.getElementById("ntech-submit").addEventListener("click", async () => {
+        try {
+          await submitNewTechnician(selectedLicenseFiles);
+        } catch (e) {
+          setMsg("ntech-msg", e.message);
+        }
+      });
+    }
+
+    async function submitNewTechnician(selectedLicenseFiles = []) {
+      const fd = new FormData();
+      fd.append("phone", document.getElementById("ntech-phone").value.trim());
+      fd.append("password", document.getElementById("ntech-password").value);
+      fd.append("real_name", document.getElementById("ntech-real-name").value.trim());
+      fd.append("id_card_no", document.getElementById("ntech-id-card-no").value.trim());
+      fd.append("gender", document.getElementById("ntech-gender").value);
+      fd.append("work_years", document.getElementById("ntech-work-years").value || "0");
+      fd.append("service_types", document.getElementById("ntech-service-types").value.trim());
+      fd.append("service_areas", document.getElementById("ntech-service-areas").value.trim());
+      fd.append("bio", document.getElementById("ntech-bio").value.trim());
+      const idFront = document.getElementById("ntech_idf_file").files[0];
+      const idBack = document.getElementById("ntech_idb_file").files[0];
+      if (!idFront || !idBack) throw new Error("身份证正反面为必传");
+      fd.append("id_card_front", idFront);
+      fd.append("id_card_back", idBack);
+      const avatar = document.getElementById("ntech_avatar_file").files[0];
+      const health = document.getElementById("ntech_health_file").files[0];
+      if (avatar) fd.append("avatar", avatar);
+      if (health) fd.append("health_cert", health);
+      selectedLicenseFiles.forEach((f) => fd.append("licenses", f));
+      const data = await api("/api/accounts/organization/technicians/register", { method: "POST", body: fd });
+      closeOrgDrawer();
+      setMsg("bind-msg", `已提交新增技师（ID ${data.technician_id}），状态：${statusText(data.verification_status)}`, true);
+      await loadTechnicians();
+      await loadDashboard();
+      await loadMessages();
+    }
+    async function bindTechnician() {
+      const phone = document.getElementById("bind-tech-phone").value.trim();
+      if (!phone) throw new Error("请输入技师手机号");
+      const data = await api("/api/accounts/organization/technicians", { method: "POST", body: JSON.stringify({ phone }) });
+      setMsg("bind-msg", "绑定成功：" + statusText(data.status), true);
+      document.getElementById("bind-tech-phone").value = "";
+      await loadTechnicians();
+      await loadDashboard();
+    }
+    async function deleteRelation(relationId) {
+      await api(`/api/accounts/organization/technicians?relation_id=${relationId}`, { method: "DELETE" });
+      await loadTechnicians();
+      await loadDashboard();
+    }
+    async function unbindAction(relationId, action) {
+      await api(`/api/accounts/organization/technicians/${relationId}/unbind/${action}`, { method: "POST", body: "{}" });
+      await loadTechnicians();
+      await loadDashboard();
+      await loadMessages();
+    }
+
+    async function loadServices() {
+      const q = document.getElementById("service-q").value.trim();
+      const status = document.getElementById("service-status").value;
+      const params = new URLSearchParams();
+      if (q) params.append("q", q);
+      if (status) params.append("status", status);
+      const data = await api(`/api/accounts/organization/services?${params.toString()}`, { method: "GET" });
+      serviceRows = data.items || [];
+      const tbody = document.getElementById("service-table-body");
+      if (!serviceRows.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#94a3b8;">暂无服务数据</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = serviceRows.map((x) => `
+        <tr>
+          <td>${x.id}</td><td>${x.title || "-"}</td><td>${x.real_name || "-"}</td><td>${statusText(x.status)}</td><td>${x.service_areas || "-"}</td><td>${x.contact_info || "-"}</td>
+          <td class="row-btns">
+            <button class="btn alt" data-act="edit-svc" data-id="${x.id}">编辑</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+    async function loadMessages() {
+      const data = await api("/api/accounts/organization/messages", { method: "GET" });
+      const s = data.summary || {};
+      document.getElementById("msg-summary").innerHTML =
+        `待处理：解绑 ${s.pending_unbind_count || 0}，技师认证 ${s.pending_technician_verify_count || 0}，服务审核 ${s.pending_service_audit_count || 0}`;
+      const tbody = document.getElementById("message-table-body");
+      const items = data.items || [];
+      if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#94a3b8;">暂无消息</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = items.map((x) => `<tr><td>${x.title || "-"}</td><td>${x.content || "-"}</td><td>${x.action || "-"}</td></tr>`).join("");
+    }
+
+    document.querySelectorAll(".menu-btn").forEach((btn) => {
+      btn.addEventListener("click", () => switchView(btn.getAttribute("data-view")));
+    });
+    const orgProvinceSelect = document.getElementById("org-province");
+    const orgCitySelect = document.getElementById("org-city");
+    const orgDistrictSelect = document.getElementById("org-district");
+    renderRegionSelectors();
+    orgProvinceSelect.addEventListener("change", async () => {
+      await renderRegionSelectors(orgProvinceSelect.value);
+    });
+    orgCitySelect.addEventListener("change", async () => {
+      await renderRegionSelectors(orgProvinceSelect.value, orgCitySelect.value);
+    });
+    orgDistrictSelect.addEventListener("change", () => {});
+
+    const orgLicenseInput = document.getElementById("org-license-file");
+    const orgLicenseDropzone = document.getElementById("org-license-dropzone");
+    orgLicenseDropzone.addEventListener("click", (e) => {
+      if (orgProfileLocked) return;
+      if (e.target.closest("#org_license_remove")) {
+        e.preventDefault();
+        pendingOrgLicenseFile = null;
+        currentOrgLicenseUrl = "";
+        orgLicenseInput.value = "";
+        renderOrgLicenseDropzone();
+        return;
+      }
+      if (e.target.closest("#org_license_add")) {
+        orgLicenseInput.click();
+      }
+    });
+    orgLicenseInput.addEventListener("change", () => {
+      const file = (orgLicenseInput.files && orgLicenseInput.files[0]) || null;
+      pendingOrgLicenseFile = file;
+      renderOrgLicenseDropzone();
+    });
+
+    document.getElementById("btn-save-org").addEventListener("click", async () => { try { await saveOrgProfile(); } catch (e) { setMsg("org-msg", e.message); } });
+    document.getElementById("btn-submit-org-verify").addEventListener("click", async () => { try { await submitOrgVerification(); } catch (e) { setMsg("org-msg", e.message); } });
+    document.getElementById("btn-open-new-tech").addEventListener("click", () => openNewTechnicianDrawer());
+    document.getElementById("btn-bind-tech").addEventListener("click", async () => { try { await bindTechnician(); } catch (e) { setMsg("bind-msg", e.message); } });
+    document.getElementById("btn-service-search").addEventListener("click", async () => { try { await loadServices(); } catch (e) { showToast(e.message || "加载失败", "error"); } });
+
+    document.getElementById("tech-table-body").addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-act]");
+      if (!btn) return;
+      const act = btn.getAttribute("data-act");
+      const rel = btn.getAttribute("data-rel");
+      try {
+        if (act === "edit-tech") await openTechEditDrawer(rel);
+        if (act === "remove-tech") await deleteRelation(rel);
+        if (act === "approve-unbind") await unbindAction(rel, "approve");
+        if (act === "reject-unbind") await unbindAction(rel, "reject");
+      } catch (err) { setMsg("bind-msg", err.message); }
+    });
+    document.getElementById("service-table-body").addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-act='edit-svc']");
+      if (!btn) return;
+      try { await openServiceEditDrawer(btn.getAttribute("data-id")); } catch (err) { showToast(err.message || "打开失败", "error"); }
+    });
+
+    document.getElementById("btn-change-password").addEventListener("click", () => openChangePasswordDrawer());
+
+    document.getElementById("btn-logout").addEventListener("click", () => {
+      localStorage.removeItem(TOKEN_KEY);
+      window.location.href = "/org/login/";
+    });
+    const orgUserMenu = document.getElementById("org-user-menu");
+    const orgUserTrigger = document.getElementById("org-user-trigger");
+    const orgUserDropdown = document.getElementById("org-user-dropdown");
+    orgUserTrigger.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      orgUserMenu.classList.toggle("is-open");
+    });
+    orgUserDropdown.addEventListener("click", (e) => e.stopPropagation());
+    document.addEventListener("click", () => orgUserMenu.classList.remove("is-open"));
+
+
+    async function loadCurrentOrgUser() {
+      try {
+        const data = await api("/api/accounts/profile", { method: "GET" });
+        const name = s(data.real_name || data.first_name || data.username || data.phone || "机构用户");
+        const avatarUrl = s(data.avatar_url || data.avatar || "");
+        const nameEl = document.getElementById("org-user-name");
+        const avatarEl = document.getElementById("org-user-avatar");
+        if (nameEl) nameEl.textContent = name;
+        if (avatarEl) {
+          if (avatarUrl) avatarEl.innerHTML = `<img src="${escapeAttr(avatarUrl)}" alt="" />`;
+          else avatarEl.textContent = name.slice(0, 1) || "机";
+        }
+      } catch (_) {}
+    }
+
+    function openChangePasswordDrawer() {
+      const body = `
+        <div id="pwd-msg" class="msg"></div>
+        <div class="org-form-grid"><label>原密码</label><div><input id="pwd-old" type="password" class="ipt" placeholder="请输入原密码" /></div></div>
+        <div class="org-form-grid"><label>新密码</label><div><input id="pwd-new" type="password" class="ipt" placeholder="至少 6 位" /></div></div>
+        <div class="org-form-grid"><label>确认新密码</label><div><input id="pwd-new2" type="password" class="ipt" placeholder="请再次输入新密码" /></div></div>
+      `;
+      const footer = `<button type="button" class="btn alt" id="pwd-cancel">取消</button><button type="button" class="btn" id="pwd-submit">确认修改</button>`;
+      openOrgDrawer("修改密码", body, footer);
+      document.getElementById("pwd-cancel").addEventListener("click", closeOrgDrawer);
+      document.getElementById("pwd-submit").addEventListener("click", async () => {
+        const oldPwd = document.getElementById("pwd-old").value;
+        const newPwd = document.getElementById("pwd-new").value;
+        const newPwd2 = document.getElementById("pwd-new2").value;
+        if (!oldPwd || !newPwd) return setMsg("pwd-msg", "请完整填写原密码和新密码");
+        if (newPwd.length < 6) return setMsg("pwd-msg", "新密码长度不能少于 6 位");
+        if (newPwd !== newPwd2) return setMsg("pwd-msg", "两次输入的新密码不一致");
+        await api("/api/accounts/organization/change-password", { method: "POST", body: JSON.stringify({ old_password: oldPwd, new_password: newPwd }) });
+        closeOrgDrawer();
+        setMsg("org-msg", "密码修改成功，请使用新密码登录", true);
+      });
+    }
+
+    (async function init() {
+      try {
+        const params = new URLSearchParams(window.location.search || "");
+        const targetView = params.get("view") || "";
+        if (views.includes(targetView)) switchView(targetView);
+        await Promise.all([loadCurrentOrgUser(), loadDashboard(), loadOrgProfile(), loadTechnicians(), loadServices(), loadMessages()]);
+        if (targetView === "my_verify" && params.get("from") === "register") {
+          setMsg("org-msg", "注册成功，请先完善机构资料并提交认证", true);
+        }
+      } catch (e) {
+        setMsg("org-msg", e.message);
+      }
+    })();
+  </script>
+</body>
+</html>
+

@@ -7,6 +7,50 @@ from django.core.exceptions import ValidationError
 from .models import Category
 
 
+DEFAULT_HOT_SERVICE_NAMES = [
+    "章贡月嫂",
+    "家庭保洁",
+    "家庭保姆",
+    "养老护理",
+    "收纳整理",
+    "家电维修",
+    "放心搬家",
+]
+
+
+def bootstrap_default_hot_services() -> None:
+    """
+    初始化默认热门服务：
+    - 仅补齐默认项，不删除/覆盖用户已有配置（含排序）
+    - 若能匹配到同名一级分类，则默认跳转到该分类
+    """
+    from .models import HotService
+
+    total = len(DEFAULT_HOT_SERVICE_NAMES)
+    for index, service_name in enumerate(DEFAULT_HOT_SERVICE_NAMES, start=1):
+        category = (
+            Category.objects.filter(
+                name=service_name,
+                parent_id=0,
+                status=Category.Status.ENABLED,
+            )
+            .order_by("id")
+            .first()
+        )
+        link_type = HotService.LinkType.CATEGORY if category else HotService.LinkType.NONE
+        link_value = str(category.id) if category else ""
+        sort_order = (total - index + 1) * 10  # 与 -sort_order 排序配合，保持给定顺序
+        HotService.objects.get_or_create(
+            name=service_name,
+            defaults={
+                "link_type": link_type,
+                "link_value": link_value,
+                "sort_order": sort_order,
+                "status": HotService.Status.ENABLED,
+            },
+        )
+
+
 def validate_category_parent_for_save(
     *,
     parent: Category | None,

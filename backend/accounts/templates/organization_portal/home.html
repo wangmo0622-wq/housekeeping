@@ -1,0 +1,170 @@
+{% load static %}
+<!doctype html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>机构门户</title>
+  <link rel="stylesheet" href="{% static 'css/organization_portal.css' %}?v=20260425a" />
+</head>
+<body class="bg-slate-50 text-slate-900 relative overflow-x-hidden min-h-screen flex flex-col">
+  <!-- Background Elements -->
+  <div class="blob-1"></div>
+  <div class="blob-2"></div>
+
+  <!-- Header -->
+  <header class="fixed w-full top-0 z-50 glass-effect border-b border-slate-200/50 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary-500/30">
+          P
+        </div>
+        <span class="font-bold text-xl tracking-tight text-slate-800">机构门户</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="/org/login/" class="text-sm font-medium text-slate-600 hover:text-primary-600 transition-colors hidden sm:block">登录</a>
+        <a href="/org/login/" class="px-5 py-2.5 rounded-full bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 hover:shadow-xl hover:shadow-slate-900/30 hover:-translate-y-0.5">
+          立即开始
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow pt-32 pb-20 px-6 relative z-10 flex flex-col justify-center">
+    <div class="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center">
+      
+      <!-- Left Column: Hero Text -->
+      <div class="space-y-8 relative">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 border border-primary-100 text-primary-700 text-sm font-medium">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
+          </span>
+          机构协同运营中心
+        </div>
+        
+        <h1 class="text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.15]">
+          轻松管理 <br/>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-600">服务与团队</span> <br/>
+          一体化运营
+        </h1>
+        
+        <p class="text-lg text-slate-600 max-w-lg leading-relaxed">
+          独立于系统管理端的前台机构门户。轻松完成机构入驻、技师管理、服务发布及进度跟踪，提升您的运营效率。
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 pt-4">
+          <a href="/org/login/" class="px-8 py-4 rounded-2xl bg-primary-600 text-white text-base font-semibold hover:bg-primary-700 transition-all shadow-xl shadow-primary-600/30 hover:shadow-2xl hover:shadow-primary-600/40 hover:-translate-y-1 text-center flex items-center justify-center gap-2">
+            机构入驻
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+          </a>
+          <a href="/org/login/" class="px-8 py-4 rounded-2xl bg-white text-slate-700 border border-slate-200 text-base font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow-md text-center">
+            已有账号登录
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive Card -->
+      <div class="relative lg:h-[600px] flex items-center justify-center lg:justify-end">
+        <!-- Decorative element -->
+        <div class="absolute inset-0 bg-gradient-to-tr from-primary-100 to-white rounded-3xl transform rotate-3 scale-105 opacity-50 z-0"></div>
+        
+        <div class="bg-white/80 backdrop-blur-xl border border-white p-8 rounded-3xl shadow-2xl shadow-slate-200/50 relative z-10 w-full max-w-md transform hover:-translate-y-2 transition-transform duration-500">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="text-xl font-bold text-slate-800">入驻流程</h3>
+            <div class="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+          </div>
+          
+          <div class="space-y-6">
+            <div class="flex gap-4">
+              <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-sm shadow-md">1</div>
+                <div class="w-0.5 h-full bg-primary-100 my-2"></div>
+              </div>
+              <div class="pb-6">
+                <h4 class="font-semibold text-slate-800 text-lg">注册账号</h4>
+                <p class="text-sm text-slate-500 mt-1">使用机构手机号及密码完成快速注册。</p>
+              </div>
+            </div>
+            
+            <div class="flex gap-4">
+              <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-sm shadow-md">2</div>
+                <div class="w-0.5 h-full bg-primary-100 my-2"></div>
+              </div>
+              <div class="pb-6">
+                <h4 class="font-semibold text-slate-800 text-lg">完善资料</h4>
+                <p class="text-sm text-slate-500 mt-1">登录后补充机构详细信息并上传营业执照。</p>
+              </div>
+            </div>
+            
+            <div class="flex gap-4">
+              <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-sm shadow-md">3</div>
+                <div class="w-0.5 h-full bg-slate-100 my-2"></div>
+              </div>
+              <div class="pb-6">
+                <h4 class="font-semibold text-slate-800 text-lg">平台审核</h4>
+                <p class="text-sm text-slate-500 mt-1">提交认证申请，等待平台管理人员审核。</p>
+              </div>
+            </div>
+            
+            <div class="flex gap-4">
+              <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm">4</div>
+              </div>
+              <div>
+                <h4 class="font-semibold text-slate-800 text-lg">开展业务</h4>
+                <p class="text-sm text-slate-500 mt-1">认证通过后，即可进行技师绑定与服务管理。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- Features Section -->
+    <div class="max-w-7xl mx-auto w-full mt-24 grid md:grid-cols-3 gap-8">
+      <div class="bg-white p-8 rounded-3xl shadow-lg shadow-slate-100 border border-slate-100 hover:shadow-xl transition-all hover:-translate-y-1">
+        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-6">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+        </div>
+        <h3 class="text-xl font-bold text-slate-800 mb-3">技师管理</h3>
+        <p class="text-slate-600 leading-relaxed">机构可增删改查旗下技师，统一管理认证状态。支持代提交资料，技师解绑需机构确认，保障运营安全。</p>
+      </div>
+      
+      <div class="bg-white p-8 rounded-3xl shadow-lg shadow-slate-100 border border-slate-100 hover:shadow-xl transition-all hover:-translate-y-1">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+        </div>
+        <h3 class="text-xl font-bold text-slate-800 mb-3">服务管理</h3>
+        <p class="text-slate-600 leading-relaxed">按机构维度统一管理已认证技师发布的服务。支持批量操作与状态监控，便于进行标准化运营与质量控制。</p>
+      </div>
+      
+      <div class="bg-white p-8 rounded-3xl shadow-lg shadow-slate-100 border border-slate-100 hover:shadow-xl transition-all hover:-translate-y-1">
+        <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-6">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+        </div>
+        <h3 class="text-xl font-bold text-slate-800 mb-3">消息与通知</h3>
+        <p class="text-slate-600 leading-relaxed">集中处理待审核事项，包括机构认证、技师解绑、资料审核进度等。关键节点实时提醒，不遗漏任何重要运营信息。</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 mt-auto relative z-10 bg-white">
+    <div class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-xs">P</div>
+        <span class="font-semibold text-slate-800">机构门户</span>
+      </div>
+      <p class="text-sm text-slate-500">机构门户（前台）与系统管理后台已完全隔离。 &copy; 2024 虔诚家政平台.</p>
+    </div>
+  </footer>
+</body>
+</html>
+

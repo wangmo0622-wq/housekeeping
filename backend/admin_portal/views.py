@@ -1,5 +1,10 @@
 import base64
+import json
+import os
 import re
+import urllib.error
+import urllib.request
+import uuid
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
@@ -15,15 +20,34 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from accounts.models import TechnicianProfile, TechnicianVerification
+from accounts.models import (
+    Organization,
+    OrganizationTechnician,
+    TechnicianLicense,
+    TechnicianProfile,
+    TechnicianVerification,
+)
 from admin_portal.captcha_utils import create_captcha, verify_captcha
-from admin_portal.models import AdminMenu
+from admin_portal.models import AdminMenu, SiteDocument
+from admin_portal.models import LLMProviderConfig
 from catalog.models import Banner, Category, HotService, ServiceType
 from listings.models import Listing
+from django.core.files.storage import default_storage
 
 
 def format_dt(dt):
     return dt.strftime("%Y-%m-%d %H:%M:%S") if dt else None
+
+
+def safe_validate_password(password, user=None):
+    """
+    兼容部分环境缺失 Django common-passwords 文件时的密码校验。
+    """
+    try:
+        validate_password(password, user=user)
+    except FileNotFoundError:
+        if not password or len(str(password)) < 6:
+            raise ValidationError("密码长度不能少于6位")
 
 
 class IsOperator(permissions.BasePermission):
@@ -161,6 +185,170 @@ class AdminTechnicianVerificationActionView(APIView):
         elif action == "recommend":
             p.is_recommended = not p.is_recommended
         p.save()
+        return Response({"ok": True})
+
+
+class AdminOrganizationsView(APIView):
+    permission_classes = [IsOperator]
+
+    def get(self, request):
+        q = (request.query_params.get("q") or "").strip()
+        verification_status = (request.query_params.get("verification_status") or "").strip()
+        page = int(request.query_params.get("page", 1))
+        page_size = int(request.query_params.get("page_size", 20))
+
+        qs = Organization.objects.select_related("user").all()
+        if q:
+            qs = qs.filter(
+                Q(company_name__icontains=q)
+                | Q(contact_person__icontains=q)
+                | Q(contact_phone__icontains=q)
+                | Q(user__username__icontains=q)
+            )
+        # 默认列表不显示「未发起认证」的机构；?verification_status=all 显示全部
+        if verification_status == "all":
+            pass
+        elif verification_status:
+            qs = qs.filter(verification_status=verification_status)
+        else:
+            qs = qs.exclude(verification_status=Organization.VerificationStatus.UNINITIATED)
+
+        total = qs.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        organizations = list(qs.order_by("-updated_at")[start:end])
+        org_ids = [o.id for o in organizations]
+
+        rel_qs = OrganizationTechnician.objects.filter(organization_id__in=org_ids)
+        active_map = {}
+        pending_map = {}
+        for rel in rel_qs:
+            active_map.setdefault(rel.organization_id, 0)
+            pending_map.setdefault(rel.organization_id, 0)
+            if rel.status == OrganizationTechnician.Status.ACTIVE:
+                active_map[rel.organization_id] += 1
+            if rel.status == OrganizationTechnician.Status.PENDING:
+                pending_map[rel.organization_id] += 1
+
+        items = [
+            {
+                "id": o.id,
+                "user_id": o.user_id,
+                "company_name": o.company_name,
+                "contact_person": o.contact_person,
+                "contact_phone": o.contact_phone,
+                "verification_status": o.verification_status,
+                "is_disabled": o.is_disabled,
+                "active_technician_count": active_map.get(o.id, 0),
+                "pending_unbind_count": pending_map.get(o.id, 0),
+                "updated_at": format_dt(o.updated_at),
+            }
+            for o in organizations
+        ]
+        return Response(
+            {
+                "items": items,
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total + page_size - 1) // page_size if page_size > 0 else 0,
+            }
+        )
+
+
+class AdminOrganizationDetailView(APIView):
+    permission_classes = [IsOperator]
+
+    def get(self, request, organization_id: int):
+        organization = Organization.objects.filter(id=organization_id).select_related("user").first()
+        if not organization:
+            raise Http404
+
+        relations = (
+            OrganizationTechnician.objects.filter(organization=organization)
+            .select_related("technician")
+            .order_by("-updated_at")[:200]
+        )
+        technicians = [
+            {
+                "relation_id": rel.id,
+                "technician_id": rel.technician_id,
+                "real_name": rel.technician.real_name,
+                "phone": rel.technician.phone,
+                "verification_status": rel.technician.verification_status,
+                "status": rel.status,
+                "updated_at": format_dt(rel.updated_at),
+            }
+            for rel in relations
+        ]
+        return Response(
+            {
+                "id": organization.id,
+                "user_id": organization.user_id,
+                "username": organization.user.username if organization.user else "",
+                "company_name": organization.company_name,
+                "business_license": organization.business_license.url if organization.business_license else None,
+                "business_license_number": organization.business_license_number,
+                "contact_person": organization.contact_person,
+                "contact_phone": organization.contact_phone,
+                "address": organization.address,
+                "verification_status": organization.verification_status,
+                "is_disabled": organization.is_disabled,
+                "created_at": format_dt(organization.created_at),
+                "updated_at": format_dt(organization.updated_at),
+                "technicians": technicians,
+            }
+        )
+
+    def patch(self, request, organization_id: int):
+        organization = Organization.objects.filter(id=organization_id).first()
+        if not organization:
+            raise Http404
+
+        if "company_name" in request.data:
+            organization.company_name = str(request.data.get("company_name") or "").strip()
+        if "contact_person" in request.data:
+            organization.contact_person = str(request.data.get("contact_person") or "").strip()
+        if "contact_phone" in request.data:
+            organization.contact_phone = str(request.data.get("contact_phone") or "").strip()
+        if "address" in request.data:
+            organization.address = str(request.data.get("address") or "").strip()
+        if "business_license_number" in request.data:
+            organization.business_license_number = str(request.data.get("business_license_number") or "").strip()
+        if "verification_status" in request.data:
+            status_value = str(request.data.get("verification_status") or "").strip()
+            if status_value not in {c[0] for c in Organization.VerificationStatus.choices}:
+                return Response({"detail": "认证状态参数不合法"}, status=status.HTTP_400_BAD_REQUEST)
+            organization.verification_status = status_value
+        if "is_disabled" in request.data:
+            raw = request.data.get("is_disabled")
+            organization.is_disabled = str(raw).strip().lower() in ("1", "true", "yes", "on")
+
+        organization.save()
+        return Response({"ok": True})
+
+
+class AdminOrganizationReviewActionView(APIView):
+    permission_classes = [IsOperator]
+
+    def post(self, request, organization_id: int, action: str):
+        organization = Organization.objects.filter(id=organization_id).first()
+        if not organization:
+            raise Http404
+
+        if action == "approve":
+            organization.verification_status = Organization.VerificationStatus.APPROVED
+            organization.is_disabled = False
+        elif action == "reject":
+            organization.verification_status = Organization.VerificationStatus.REJECTED
+        elif action == "disable":
+            organization.is_disabled = True
+        elif action == "enable":
+            organization.is_disabled = False
+        else:
+            return Response({"detail": "无效操作"}, status=status.HTTP_400_BAD_REQUEST)
+
+        organization.save(update_fields=["verification_status", "is_disabled", "updated_at"])
         return Response({"ok": True})
 
 
@@ -314,7 +502,7 @@ class AdminAdminUsersView(APIView):
         if User.objects.filter(username=username).exists():
             return Response({"detail": "用户名已存在"}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            validate_password(password)
+            safe_validate_password(password)
         except ValidationError as e:
             return Response({"detail": e.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
         user = User.objects.create_user(
@@ -373,7 +561,7 @@ class AdminChangePasswordView(APIView):
         if not user.check_password(old_password):
             return Response({"detail": "旧密码错误"}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            validate_password(new_password, user=user)
+            safe_validate_password(new_password, user=user)
         except ValidationError as e:
             return Response({"detail": e.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
         user.set_password(new_password)
@@ -452,7 +640,16 @@ class AdminHotServicesView(APIView):
 
     def get(self, request):
         qs = HotService.objects.all().order_by("-sort_order", "-created_at")
-        items = [{"id": x.id, "name": x.name, "status": x.status, "link_type": x.link_type, "link_value": x.link_value} for x in qs]
+        items = [{
+            "id": x.id, 
+            "name": x.name, 
+            "status": x.status, 
+            "link_type": x.link_type, 
+            "link_value": x.link_value,
+            "sort_order": x.sort_order,
+            "created_at": format_dt(x.created_at),
+            "icon": x.icon.url if x.icon else None
+        } for x in qs]
         return Response({"items": items, "total": qs.count(), "page": 1, "page_size": 200, "total_pages": 1})
 
     def post(self, request):
@@ -475,7 +672,15 @@ class AdminHotServiceDetailView(APIView):
         hs = HotService.objects.filter(id=hot_service_id).first()
         if not hs:
             raise Http404
-        return Response({"id": hs.id, "name": hs.name, "status": hs.status, "link_type": hs.link_type, "link_value": hs.link_value})
+        return Response({
+            "id": hs.id, 
+            "name": hs.name, 
+            "status": hs.status, 
+            "link_type": hs.link_type, 
+            "link_value": hs.link_value,
+            "sort_order": hs.sort_order,
+            "icon": hs.icon.url if hs.icon else None
+        })
 
     def patch(self, request, hot_service_id: int):
         hs = HotService.objects.filter(id=hot_service_id).first()
@@ -499,8 +704,284 @@ class AdminHotServiceDetailView(APIView):
         return Response({"ok": True})
 
 
+class AdminSiteDocumentsView(APIView):
+    permission_classes = [IsOperator]
+
+    def get(self, request):
+        items = []
+        for doc_type, label in SiteDocument.DocType.choices:
+            doc, _ = SiteDocument.objects.get_or_create(
+                doc_type=doc_type,
+                defaults={"title": label, "content": ""},
+            )
+            items.append(
+                {
+                    "doc_type": doc.doc_type,
+                    "doc_type_label": label,
+                    "title": doc.title or label,
+                    "content": doc.content or "",
+                    "updated_at": format_dt(doc.updated_at),
+                }
+            )
+        return Response({"items": items})
+
+
+class AdminSiteDocumentDetailView(APIView):
+    permission_classes = [IsOperator]
+
+    def get(self, request, doc_type: str):
+        if doc_type not in {SiteDocument.DocType.TERMS, SiteDocument.DocType.PRIVACY}:
+            return Response({"detail": "文档类型不合法"}, status=status.HTTP_400_BAD_REQUEST)
+        label = dict(SiteDocument.DocType.choices).get(doc_type, doc_type)
+        doc, _ = SiteDocument.objects.get_or_create(
+            doc_type=doc_type,
+            defaults={"title": label, "content": ""},
+        )
+        return Response(
+            {
+                "doc_type": doc.doc_type,
+                "doc_type_label": label,
+                "title": doc.title or label,
+                "content": doc.content or "",
+                "updated_at": format_dt(doc.updated_at),
+            }
+        )
+
+    def patch(self, request, doc_type: str):
+        if doc_type not in {SiteDocument.DocType.TERMS, SiteDocument.DocType.PRIVACY}:
+            return Response({"detail": "文档类型不合法"}, status=status.HTTP_400_BAD_REQUEST)
+        label = dict(SiteDocument.DocType.choices).get(doc_type, doc_type)
+        doc, _ = SiteDocument.objects.get_or_create(
+            doc_type=doc_type,
+            defaults={"title": label, "content": ""},
+        )
+        if "title" in request.data:
+            doc.title = str(request.data.get("title") or "").strip() or label
+        if "content" in request.data:
+            doc.content = str(request.data.get("content") or "")
+        doc.save(update_fields=["title", "content", "updated_at"])
+        return Response({"ok": True})
+
+
+class AdminAiRewriteView(APIView):
+    permission_classes = [IsOperator]
+
+    def post(self, request):
+        prompt = str(request.data.get("prompt") or "").strip()
+        content = str(request.data.get("content") or "")
+        if not prompt:
+            return Response({"detail": "prompt 不能为空"}, status=status.HTTP_400_BAD_REQUEST)
+
+        cfg = get_active_llm_provider()
+        if not cfg:
+            return Response({"detail": "未配置可用大模型，请在「大模型管理」中启用并设为当前"}, status=status.HTTP_400_BAD_REQUEST)
+        if not (cfg.api_key or "").strip():
+            return Response({"detail": f"{cfg.display_name or cfg.provider} 未配置 API Key"}, status=status.HTTP_400_BAD_REQUEST)
+        model = (cfg.model_name or "").strip()
+        base_url = (cfg.base_url or "").strip()
+        if not model or not base_url:
+            return Response({"detail": f"{cfg.display_name or cfg.provider} 配置不完整（缺少 model 或 base_url）"}, status=status.HTTP_400_BAD_REQUEST)
+
+        body = {
+            "model": model,
+            "temperature": 0.3,
+            "messages": [
+                {"role": "system", "content": "你是专业文档助手，输出简洁、合规、可直接发布的中文内容。"},
+                {"role": "user", "content": f"请按要求处理以下文档。\n\n要求：{prompt}\n\n文档内容：\n{content}"},
+            ],
+        }
+        req = urllib.request.Request(
+            base_url,
+            data=json.dumps(body).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {cfg.api_key.strip()}",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=45) as resp:
+                payload = json.loads(resp.read().decode("utf-8") or "{}")
+        except urllib.error.HTTPError as e:
+            raw = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else str(e)
+            return Response({"detail": f"{cfg.display_name or cfg.provider} 请求失败：{raw or str(e)}"}, status=status.HTTP_502_BAD_GATEWAY)
+        except Exception as e:
+            return Response({"detail": f"{cfg.display_name or cfg.provider} 请求异常：{str(e)}"}, status=status.HTTP_502_BAD_GATEWAY)
+
+        text = (
+            ((payload.get("choices") or [{}])[0].get("message") or {}).get("content")
+            if isinstance(payload, dict)
+            else ""
+        )
+        text = str(text or "").strip()
+        if not text:
+            return Response({"detail": "AI 未返回内容"}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response({"text": text, "model": model, "provider": cfg.provider})
+
+
+def _llm_defaults():
+    return {
+        LLMProviderConfig.Provider.ALIBABA: {
+            "display_name": "阿里",
+            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+            "model_name": "qwen-plus",
+        },
+        LLMProviderConfig.Provider.SILICONFLOW: {
+            "display_name": "硅基流动",
+            "base_url": "https://api.siliconflow.cn/v1/chat/completions",
+            "model_name": "deepseek-ai/DeepSeek-V3",
+        },
+        LLMProviderConfig.Provider.DEEPSEEK: {
+            "display_name": "DeepSeek",
+            "base_url": "https://api.deepseek.com/v1/chat/completions",
+            "model_name": "deepseek-chat",
+        },
+    }
+
+
+def _mask_key(v: str):
+    s = str(v or "").strip()
+    if not s:
+        return ""
+    if len(s) <= 8:
+        return "*" * len(s)
+    return f"{s[:4]}****{s[-4:]}"
+
+
+def _ensure_llm_configs():
+    defaults = _llm_defaults()
+    for provider, d in defaults.items():
+        LLMProviderConfig.objects.get_or_create(
+            provider=provider,
+            defaults={
+                "display_name": d["display_name"],
+                "base_url": d["base_url"],
+                "model_name": d["model_name"],
+                "is_enabled": True,
+                "is_active": provider == LLMProviderConfig.Provider.SILICONFLOW,
+            },
+        )
+    if not LLMProviderConfig.objects.filter(is_active=True).exists():
+        first = LLMProviderConfig.objects.order_by("id").first()
+        if first:
+            first.is_active = True
+            first.save(update_fields=["is_active", "updated_at"])
+
+
+def get_active_llm_provider():
+    _ensure_llm_configs()
+    cfg = LLMProviderConfig.objects.filter(is_active=True, is_enabled=True).order_by("id").first()
+    if cfg:
+        return cfg
+    return LLMProviderConfig.objects.filter(is_enabled=True).order_by("id").first()
+
+
+class AdminLLMProvidersView(APIView):
+    permission_classes = [IsOperator]
+
+    def get(self, request):
+        _ensure_llm_configs()
+        rows = LLMProviderConfig.objects.order_by("id")
+        items = []
+        for r in rows:
+            items.append(
+                {
+                    "provider": r.provider,
+                    "display_name": r.display_name or r.provider,
+                    "base_url": r.base_url or "",
+                    "model_id": r.model_id or "",
+                    "model_name": r.model_name or "",
+                    "is_enabled": bool(r.is_enabled),
+                    "is_active": bool(r.is_active),
+                    "api_key_masked": _mask_key(r.api_key),
+                    "has_api_key": bool((r.api_key or "").strip()),
+                    "updated_at": format_dt(r.updated_at),
+                }
+            )
+        return Response({"items": items})
+
+
+class AdminLLMProviderDetailView(APIView):
+    permission_classes = [IsOperator]
+
+    def patch(self, request, provider: str):
+        _ensure_llm_configs()
+        if provider not in set(_llm_defaults().keys()):
+            return Response({"detail": "provider 不合法"}, status=status.HTTP_400_BAD_REQUEST)
+        cfg = LLMProviderConfig.objects.filter(provider=provider).first()
+        if not cfg:
+            return Response({"detail": "provider 不存在"}, status=status.HTTP_404_NOT_FOUND)
+        if "display_name" in request.data:
+            cfg.display_name = str(request.data.get("display_name") or "").strip() or cfg.display_name
+        if "base_url" in request.data:
+            cfg.base_url = str(request.data.get("base_url") or "").strip()
+        if "model_id" in request.data:
+            cfg.model_id = str(request.data.get("model_id") or "").strip()
+        if "model_name" in request.data:
+            cfg.model_name = str(request.data.get("model_name") or "").strip()
+        if "api_key" in request.data:
+            # 仅当传入非空时覆盖，避免前端空值误清空
+            v = str(request.data.get("api_key") or "").strip()
+            if v:
+                cfg.api_key = v
+        if "is_enabled" in request.data:
+            cfg.is_enabled = bool(request.data.get("is_enabled"))
+        cfg.save(update_fields=["display_name", "base_url", "model_id", "model_name", "api_key", "is_enabled", "updated_at"])
+        return Response({"ok": True})
+
+
+class AdminLLMProviderActivateView(APIView):
+    permission_classes = [IsOperator]
+
+    def post(self, request, provider: str):
+        _ensure_llm_configs()
+        if provider not in set(_llm_defaults().keys()):
+            return Response({"detail": "provider 不合法"}, status=status.HTTP_400_BAD_REQUEST)
+        cfg = LLMProviderConfig.objects.filter(provider=provider).first()
+        if not cfg:
+            return Response({"detail": "provider 不存在"}, status=status.HTTP_404_NOT_FOUND)
+        if not cfg.is_enabled:
+            return Response({"detail": "请先启用该模型提供商"}, status=status.HTTP_400_BAD_REQUEST)
+        LLMProviderConfig.objects.exclude(provider=provider).update(is_active=False)
+        cfg.is_active = True
+        cfg.save(update_fields=["is_active", "updated_at"])
+        return Response({"ok": True})
+
+
+class AdminAssetUploadView(APIView):
+    permission_classes = [IsOperator]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, asset_type: str):
+        allowed = {"image", "video", "attachment"}
+        if asset_type not in allowed:
+            return Response({"detail": "不支持的上传类型"}, status=status.HTTP_400_BAD_REQUEST)
+
+        form_key = asset_type
+        file_obj = request.FILES.get(form_key)
+        if not file_obj:
+            return Response({"detail": f"缺少文件字段：{form_key}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        max_mb_map = {"image": 10, "video": 200, "attachment": 50}
+        max_bytes = max_mb_map[asset_type] * 1024 * 1024
+        if getattr(file_obj, "size", 0) > max_bytes:
+            return Response({"detail": f"{asset_type} 文件过大，最大 {max_mb_map[asset_type]}MB"}, status=status.HTTP_400_BAD_REQUEST)
+
+        safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", file_obj.name or "file")
+        rel_path = f"admin_portal/{asset_type}s/{uuid.uuid4().hex}_{safe_name}"
+        saved_path = default_storage.save(rel_path, file_obj)
+        url = default_storage.url(saved_path)
+        abs_url = request.build_absolute_uri(url)
+
+        if asset_type == "image":
+            return Response({"errorCode": 0, "data": {"src": abs_url, "alt": safe_name}})
+        if asset_type == "video":
+            return Response({"errorCode": 0, "data": {"src": abs_url, "poster": ""}})
+        return Response({"errorCode": 0, "data": {"href": abs_url, "fileName": safe_name}})
+
+
 def _bootstrap_default_menus():
-    # 仅在完全空表时初始化默认菜单，避免用户删除/调整后被自动“补回”
+    # 仅在完全空表时初始化默认菜单，避免用户删除/调整后被自动补回导致 ID 变化
     if AdminMenu.objects.exists():
         return
 
@@ -529,6 +1010,7 @@ def _bootstrap_default_menus():
         {"name": "分类管理", "key": "categories", "path": "/admin/categories/", "sort_order": 1, "parent": section_business},
         {"name": "服务管理", "key": "listings", "path": "/admin/listings/", "sort_order": 2, "parent": section_business},
         {"name": "技师认证", "key": "technicians", "path": "/admin/technicians/", "sort_order": 3, "parent": section_business},
+        {"name": "机构管理", "key": "organizations", "path": "/admin/organizations/", "sort_order": 4, "parent": section_business},
         {"name": "轮播管理", "key": "banners", "path": "/admin/banners/", "sort_order": 4, "parent": section_business},
         {"name": "热门服务", "key": "hot_services", "path": "/admin/hot-services/", "sort_order": 5, "parent": section_business},
         {"name": "会员列表", "key": "registered_users", "path": "/admin/registered-users/", "sort_order": 1, "parent": section_user},
@@ -536,6 +1018,10 @@ def _bootstrap_default_menus():
         {"name": "菜单管理", "key": "menus", "path": "/admin/menus/", "sort_order": 3, "parent": section_user},
         {"name": "修改密码", "key": "change_password", "path": "/admin/change-password/", "sort_order": 1, "parent": section_account},
         {"name": "个人资料", "key": "profile", "path": "/admin/profile/", "sort_order": 2, "parent": section_account},
+        {"name": "服务协议", "key": "legal_terms", "path": "/admin/legal-terms/", "sort_order": 3, "parent": section_account},
+        {"name": "隐私政策", "key": "legal_privacy", "path": "/admin/legal-privacy/", "sort_order": 4, "parent": section_account},
+        {"name": "协议政策管理", "key": "legal_docs", "path": "/admin/legal-docs/", "sort_order": 5, "parent": section_account},
+        {"name": "大模型管理", "key": "llm_providers", "path": "/admin/llm-providers/", "sort_order": 6, "parent": section_account},
     ]
     for item in defaults:
         get_or_create_by_key(
@@ -683,14 +1169,18 @@ class AdminMenuDetailView(APIView):
             return Response({"detail": "请先删除子菜单"}, status=status.HTTP_400_BAD_REQUEST)
         m.delete()
         return Response({"ok": True})
+import json
+import os
 import re
 from io import BytesIO
 import base64
 import qrcode
+from uuid import uuid4
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.files.storage import default_storage
 from django.http import Http404
 from django.utils import timezone
 from django.utils.dateformat import format as dt_format
@@ -699,9 +1189,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-from accounts.models import TechnicianProfile, TechnicianVerification
+from accounts.models import Organization, TechnicianLicense, TechnicianProfile, TechnicianVerification
 from catalog.models import Category, ServiceType, Banner, HotService
 from catalog.utils import (
+    bootstrap_default_hot_services,
     category_queryset_to_tree,
     get_descendant_ids,
     validate_category_parent_for_save,
@@ -723,6 +1214,12 @@ def _listing_cover_urls(listing: Listing) -> list:
     return [listing.cover_url] if listing.cover_url else []
 
 
+def _save_upload_and_url(upload, prefix: str) -> str:
+    ext = os.path.splitext(upload.name or "")[-1] or ".jpg"
+    path = default_storage.save(f"{prefix}/{uuid4()}{ext}", upload)
+    return default_storage.url(path)
+
+
 class IsOperator(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated and request.user.is_staff)
@@ -732,15 +1229,31 @@ class AdminDashboardView(APIView):
     permission_classes = [IsOperator]
 
     def get(self, request):
-        # 统计数据
+        # 核心总量
         total_users = User.objects.filter(is_staff=False).count()
         total_technicians = TechnicianProfile.objects.count()
-        verified_technicians = TechnicianProfile.objects.filter(verification_status=TechnicianProfile.VerificationStatus.APPROVED).count()
-        
-        # 服务人次（这里使用发布的服务数量作为近似值）
-        total_services = Listing.objects.filter(status=Listing.Status.PUBLISHED).count()
-        
-        # 12月趋势数据
+        verified_technicians = TechnicianProfile.objects.filter(
+            verification_status=TechnicianProfile.VerificationStatus.APPROVED
+        ).count()
+        total_services = Listing.objects.filter(is_deleted=False).count()
+        published_services = Listing.objects.filter(status=Listing.Status.PUBLISHED, is_deleted=False).count()
+        total_organizations = Organization.objects.count()
+        approved_organizations = Organization.objects.filter(
+            verification_status=Organization.VerificationStatus.APPROVED
+        ).count()
+
+        # 待审核/待处理
+        pending_technician_verify = TechnicianProfile.objects.filter(
+            verification_status=TechnicianProfile.VerificationStatus.PENDING
+        ).count()
+        pending_organization_verify = Organization.objects.filter(
+            verification_status=Organization.VerificationStatus.PENDING
+        ).count()
+        pending_service_audit = Listing.objects.filter(status=Listing.Status.PENDING, is_deleted=False).count()
+        disabled_technicians = TechnicianProfile.objects.filter(is_disabled=True).count()
+        disabled_organizations = Organization.objects.filter(is_disabled=True).count()
+
+        # 12月趋势数据（简化）
         now = timezone.now()
         months = []
         user_counts = []
@@ -771,8 +1284,35 @@ class AdminDashboardView(APIView):
                 "total_users": total_users,
                 "total_technicians": total_technicians,
                 "verified_technicians": verified_technicians,
-                "total_services": total_services
+                "total_services": total_services,
+                "published_services": published_services,
+                "total_organizations": total_organizations,
+                "approved_organizations": approved_organizations,
             },
+            "pending": {
+                "pending_technician_verify": pending_technician_verify,
+                "pending_organization_verify": pending_organization_verify,
+                "pending_service_audit": pending_service_audit,
+                "disabled_technicians": disabled_technicians,
+                "disabled_organizations": disabled_organizations,
+            },
+            "quick_actions": [
+                {
+                    "title": "技师认证待审核",
+                    "count": pending_technician_verify,
+                    "url": "/admin/technicians/",
+                },
+                {
+                    "title": "机构认证待审核",
+                    "count": pending_organization_verify,
+                    "url": "/admin/organizations/",
+                },
+                {
+                    "title": "服务审核待处理",
+                    "count": pending_service_audit,
+                    "url": "/admin/listings/",
+                },
+            ],
             "trends": {
                 "months": months,
                 "user_counts": user_counts,
@@ -990,6 +1530,7 @@ class AdminTechniciansView(APIView):
 
 class AdminTechnicianDetailView(APIView):
     permission_classes = [IsOperator]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request, technician_id: int):
         profile = TechnicianProfile.objects.filter(id=technician_id).first()
@@ -1043,7 +1584,10 @@ class AdminTechnicianDetailView(APIView):
             "avatar": get_file_url(profile.avatar),
             "id_card_front": get_file_url(latest_verification.id_card_front) if latest_verification else None,
             "id_card_back": get_file_url(latest_verification.id_card_back) if latest_verification else None,
-            "licenses": [get_file_url(license.license_file) for license in profile.licenses.all()],
+            "licenses": [
+                {"id": license.id, "url": get_file_url(license.license_file)}
+                for license in profile.licenses.all()
+            ],
             "verification_status": profile.verification_status,
             "is_recommended": profile.is_recommended,
             "recommended_at": format_dt(profile.recommended_at),
@@ -1051,6 +1595,176 @@ class AdminTechnicianDetailView(APIView):
             "updated_at": format_dt(profile.updated_at),
             "qrcode": qr_data_url,
         })
+
+    def patch(self, request, technician_id: int):
+        profile = TechnicianProfile.objects.filter(id=technician_id).first()
+        if not profile:
+            raise Http404
+
+        payload = request.data
+        changed_fields = []
+
+        def to_bool(value):
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, (int, float)):
+                return bool(value)
+            if isinstance(value, str):
+                return value.strip().lower() in ("1", "true", "yes", "on")
+            return bool(value)
+
+        for field in ("real_name", "id_card_no", "bio", "service_types", "service_areas"):
+            if field in payload:
+                setattr(profile, field, str(payload.get(field) or "").strip())
+                changed_fields.append(field)
+
+        if "phone" in payload:
+            phone = str(payload.get("phone") or "").strip()
+            if phone and not re.match(r"^1[3-9]\d{9}$", phone):
+                return Response({"detail": "手机号格式不正确"}, status=status.HTTP_400_BAD_REQUEST)
+            dup = (
+                TechnicianProfile.objects.filter(phone=phone)
+                .exclude(id=profile.id)
+                .exists()
+            )
+            if phone and dup:
+                return Response({"detail": "手机号已被使用"}, status=status.HTTP_400_BAD_REQUEST)
+            profile.phone = phone
+            changed_fields.append("phone")
+
+        if "gender" in payload:
+            gender = str(payload.get("gender") or "").strip()
+            valid = {choice[0] for choice in TechnicianProfile.Gender.choices}
+            if gender and gender not in valid:
+                return Response({"detail": "性别参数不合法"}, status=status.HTTP_400_BAD_REQUEST)
+            profile.gender = gender
+            changed_fields.append("gender")
+
+        if "work_years" in payload:
+            try:
+                work_years = int(payload.get("work_years") or 0)
+            except (TypeError, ValueError):
+                return Response({"detail": "工作年限必须为整数"}, status=status.HTTP_400_BAD_REQUEST)
+            if work_years < 0:
+                return Response({"detail": "工作年限不能小于0"}, status=status.HTTP_400_BAD_REQUEST)
+            profile.work_years = work_years
+            changed_fields.append("work_years")
+
+        if "verification_status" in payload:
+            verification_status = str(payload.get("verification_status") or "").strip()
+            valid = {choice[0] for choice in TechnicianProfile.VerificationStatus.choices}
+            if verification_status not in valid:
+                return Response({"detail": "认证状态参数不合法"}, status=status.HTTP_400_BAD_REQUEST)
+            profile.verification_status = verification_status
+            changed_fields.append("verification_status")
+
+        if "is_disabled" in payload:
+            profile.is_disabled = to_bool(payload.get("is_disabled"))
+            changed_fields.append("is_disabled")
+
+        if "is_recommended" in payload:
+            next_recommended = to_bool(payload.get("is_recommended"))
+            if next_recommended and not profile.is_recommended:
+                profile.recommended_at = timezone.now()
+                changed_fields.append("recommended_at")
+            if not next_recommended and profile.is_recommended:
+                profile.recommended_at = None
+                changed_fields.append("recommended_at")
+            profile.is_recommended = next_recommended
+            changed_fields.append("is_recommended")
+
+        # 文件上传/删除：形象照、健康证
+        remove_avatar = to_bool(payload.get("remove_avatar")) if "remove_avatar" in payload else False
+        remove_health_cert = to_bool(payload.get("remove_health_cert")) if "remove_health_cert" in payload else False
+
+        avatar_file = request.FILES.get("avatar")
+        if avatar_file:
+            profile.avatar = avatar_file
+            changed_fields.append("avatar")
+        elif remove_avatar and profile.avatar:
+            profile.avatar.delete(save=False)
+            profile.avatar = None
+            changed_fields.append("avatar")
+
+        health_cert_file = request.FILES.get("health_cert")
+        if health_cert_file:
+            profile.health_cert = health_cert_file
+            changed_fields.append("health_cert")
+        elif remove_health_cert and profile.health_cert:
+            profile.health_cert.delete(save=False)
+            profile.health_cert = None
+            changed_fields.append("health_cert")
+
+        # 认证材料上传/删除：身份证正反面（写入最近一条认证记录）
+        id_card_front_file = request.FILES.get("id_card_front")
+        id_card_back_file = request.FILES.get("id_card_back")
+        remove_id_card_front = to_bool(payload.get("remove_id_card_front")) if "remove_id_card_front" in payload else False
+        remove_id_card_back = to_bool(payload.get("remove_id_card_back")) if "remove_id_card_back" in payload else False
+        if id_card_front_file or id_card_back_file or remove_id_card_front or remove_id_card_back:
+            verification = (
+                profile.verifications.order_by("-submitted_at").first()
+                or TechnicianVerification.objects.create(
+                    technician=profile,
+                    verification_type=TechnicianVerification.VerificationType.IDCARD,
+                    status=TechnicianVerification.Status.PENDING,
+                )
+            )
+            verify_changed = []
+            if id_card_front_file:
+                verification.id_card_front = id_card_front_file
+                verify_changed.append("id_card_front")
+            elif remove_id_card_front and verification.id_card_front:
+                verification.id_card_front.delete(save=False)
+                verification.id_card_front = None
+                verify_changed.append("id_card_front")
+
+            if id_card_back_file:
+                verification.id_card_back = id_card_back_file
+                verify_changed.append("id_card_back")
+            elif remove_id_card_back and verification.id_card_back:
+                verification.id_card_back.delete(save=False)
+                verification.id_card_back = None
+                verify_changed.append("id_card_back")
+
+            if verify_changed:
+                verification.save(update_fields=verify_changed)
+
+        # 执照文件支持删除和追加（最多 6 个）
+        kept_license_ids = set()
+        for raw in request.data.getlist("kept_license_ids"):
+            if raw is None:
+                continue
+            for part in str(raw).split(","):
+                part = part.strip()
+                if not part:
+                    continue
+                try:
+                    kept_license_ids.add(int(part))
+                except (TypeError, ValueError):
+                    continue
+
+        kept_license_urls = {str(x).strip() for x in request.data.getlist("kept_license_urls") if str(x).strip()}
+
+        if "kept_license_ids" in payload or "kept_license_urls" in payload:
+            for license_obj in profile.licenses.all():
+                license_url = license_obj.license_file.url if license_obj.license_file else ""
+                should_keep = (license_obj.id in kept_license_ids) or (license_url in kept_license_urls)
+                if should_keep:
+                    continue
+                if license_obj.license_file:
+                    license_obj.license_file.delete(save=False)
+                license_obj.delete()
+
+        max_license_files = 6
+        existing_count = profile.licenses.count()
+        remain = max(0, max_license_files - existing_count)
+        for license_file in request.FILES.getlist("licenses")[:remain]:
+            TechnicianLicense.objects.create(technician=profile, license_file=license_file)
+
+        if changed_fields:
+            profile.save(update_fields=list(dict.fromkeys(changed_fields + ["updated_at"])))
+
+        return Response({"ok": True})
 
 
 class AdminTechnicianVerificationActionView(APIView):
@@ -1218,6 +1932,7 @@ class AdminListingsView(APIView):
 
 class AdminListingDetailView(APIView):
     permission_classes = [IsOperator]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request, listing_id: int):
         listing = (
@@ -1273,6 +1988,82 @@ class AdminListingDetailView(APIView):
         if not listing:
             raise Http404
         listing.is_deleted = True
+        listing.save()
+        return Response({"ok": True})
+
+    def patch(self, request, listing_id: int):
+        listing = Listing.objects.filter(id=listing_id).first()
+        if not listing:
+            raise Http404
+
+        payload = request.data
+
+        if "category_id" in payload:
+            try:
+                category_id = int(payload.get("category_id"))
+            except (TypeError, ValueError):
+                return Response({"detail": "分类ID不合法"}, status=status.HTTP_400_BAD_REQUEST)
+            category = Category.objects.filter(id=category_id).first()
+            if not category:
+                return Response({"detail": "分类不存在"}, status=status.HTTP_400_BAD_REQUEST)
+            listing.category = category
+
+        if "status" in payload:
+            status_val = str(payload.get("status") or "").strip()
+            valid = {choice[0] for choice in Listing.Status.choices}
+            if status_val not in valid:
+                return Response({"detail": "状态参数不合法"}, status=status.HTTP_400_BAD_REQUEST)
+            listing.status = status_val
+
+        for field in ("title", "description", "cover_url", "listing_price", "listing_price_unit", "service_areas", "contact_info"):
+            if field in payload:
+                value = payload.get(field)
+                if field in ("title", "description", "cover_url", "listing_price_unit", "service_areas", "contact_info"):
+                    value = str(value or "").strip()
+                listing.__setattr__(field, value if value != "" else (None if field == "listing_price" else ""))
+
+        if "cover_urls" in payload:
+            cover_urls = payload.get("cover_urls")
+            if isinstance(cover_urls, str):
+                raw = cover_urls.strip()
+                if raw.startswith("[") and raw.endswith("]"):
+                    try:
+                        parsed = json.loads(raw)
+                        cover_urls = parsed if isinstance(parsed, list) else []
+                    except json.JSONDecodeError:
+                        cover_urls = [u.strip() for u in re.split(r"[,\n]", raw) if u.strip()]
+                else:
+                    cover_urls = [u.strip() for u in re.split(r"[,\n]", raw) if u.strip()]
+            if not isinstance(cover_urls, list):
+                return Response({"detail": "cover_urls 必须为数组或逗号分隔字符串"}, status=status.HTTP_400_BAD_REQUEST)
+            listing.cover_urls = [str(u).strip() for u in cover_urls if str(u).strip()]
+
+        # 图片上传：单张封面与多图封面（上传后写入可访问 URL）
+        cover_image = request.FILES.get("cover_image")
+        if cover_image:
+            url = _save_upload_and_url(cover_image, "listings/covers")
+            listing.cover_url = url
+            listing.cover_urls = [url]
+
+        cover_images = request.FILES.getlist("cover_images")
+        if cover_images:
+            urls = [_save_upload_and_url(img, "listings/covers") for img in cover_images]
+            if urls:
+                existing_urls = list(listing.cover_urls or [])
+                merged_urls = (existing_urls + urls)[: Listing.MAX_COVER_URLS]
+                listing.cover_urls = merged_urls
+                listing.cover_url = merged_urls[0] if merged_urls else ""
+
+        if "technician_id" in payload:
+            try:
+                technician_id = int(payload.get("technician_id"))
+            except (TypeError, ValueError):
+                return Response({"detail": "技师ID不合法"}, status=status.HTTP_400_BAD_REQUEST)
+            technician = TechnicianProfile.objects.filter(id=technician_id).first()
+            if not technician:
+                return Response({"detail": "技师不存在"}, status=status.HTTP_400_BAD_REQUEST)
+            listing.technician = technician
+
         listing.save()
         return Response({"ok": True})
 
@@ -1497,13 +2288,14 @@ class AdminRegisteredUsersView(APIView):
         page = int(request.query_params.get("page", 1))
         page_size = int(request.query_params.get("page_size", 10))
 
-        qs = User.objects.filter(is_staff=False).select_related("technician_profile")
+        qs = User.objects.filter(is_staff=False).select_related("technician_profile", "organization")
 
         if q:
             qs = qs.filter(
                 Q(username__icontains=q)
                 | Q(first_name__icontains=q)
                 | Q(technician_profile__phone__icontains=q)
+                | Q(organization__contact_phone__icontains=q)
             ).distinct()
         elif search:
             qs = qs.filter(
@@ -1511,7 +2303,10 @@ class AdminRegisteredUsersView(APIView):
             ).distinct()
 
         if phone_search:
-            qs = qs.filter(technician_profile__phone__icontains=phone_search)
+            qs = qs.filter(
+                Q(technician_profile__phone__icontains=phone_search)
+                | Q(organization__contact_phone__icontains=phone_search)
+            ).distinct()
 
         if date_val:
             qs = qs.filter(date_joined__date=date_val)
@@ -1528,10 +2323,11 @@ class AdminRegisteredUsersView(APIView):
         items = []
         for u in qs.order_by("-date_joined")[start:end]:
             tp = getattr(u, "technician_profile", None)
+            org = getattr(u, "organization", None)
             items.append({
                 "id": u.id,
                 "username": u.username,
-                "phone": tp.phone if tp else None,
+                "phone": (tp.phone if tp and tp.phone else (org.contact_phone if org and org.contact_phone else None)),
                 "is_active": u.is_active,
                 "date_joined": str(u.date_joined),
                 "last_login": str(u.last_login) if u.last_login else None,
@@ -1600,14 +2396,15 @@ class AdminRegisteredUserDetailView(APIView):
     permission_classes = [IsOperator]
 
     def get(self, request, user_id: int):
-        user = User.objects.filter(id=user_id, is_staff=False).select_related("technician_profile").first()
+        user = User.objects.filter(id=user_id, is_staff=False).select_related("technician_profile", "organization").first()
         if not user:
             raise Http404
         tp = getattr(user, "technician_profile", None)
+        org = getattr(user, "organization", None)
         return Response({
             "id": user.id,
             "username": user.username,
-            "phone": tp.phone if tp else None,
+            "phone": (tp.phone if tp and tp.phone else (org.contact_phone if org and org.contact_phone else None)),
             "is_active": user.is_active,
             "date_joined": str(user.date_joined),
             "last_login": str(user.last_login) if user.last_login else None,
@@ -1703,7 +2500,7 @@ class AdminAdminUsersView(APIView):
             return Response({"detail": "用户名已存在"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            validate_password(password)
+            safe_validate_password(password)
         except ValidationError as e:
             return Response({"detail": e.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1786,7 +2583,7 @@ class AdminChangePasswordView(APIView):
             return Response({"detail": "旧密码错误"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            validate_password(new_password, user=user)
+            safe_validate_password(new_password, user=user)
         except ValidationError as e:
             return Response({"detail": e.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1950,6 +2747,7 @@ class AdminHotServicesView(APIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
+        bootstrap_default_hot_services()
         status_val = request.query_params.get("status")
         search = request.query_params.get("search", "").strip()
 

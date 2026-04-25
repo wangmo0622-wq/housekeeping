@@ -5,9 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+# 当前运行依赖由 Python wheels 提供，避免构建时受 Debian 镜像源波动影响。
 
 WORKDIR /app
 

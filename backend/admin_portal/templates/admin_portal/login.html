@@ -8,6 +8,16 @@
   <link rel="stylesheet" href="{% static 'admin_portal/styles.css' %}" />
   <style>
     .login-page {
+      --login-primary: var(--zy-primary);
+      --login-primary-strong: var(--zy-primary-hover);
+      --login-accent: var(--zy-accent);
+      --login-text: var(--zy-text);
+      --login-muted: var(--zy-text-secondary);
+      --login-surface: color-mix(in srgb, var(--zy-surface) 92%, #ffffff 8%);
+      --login-border: var(--zy-border);
+    }
+
+    .login-page {
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -15,7 +25,7 @@
       padding: 20px;
       position: relative;
       overflow: hidden;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--login-primary) 0%, var(--login-accent) 100%);
     }
 
     .login-page,
@@ -87,7 +97,7 @@
     .login-card {
       width: 100%;
       max-width: 420px;
-      background: rgba(255, 255, 255, 0.95);
+      background: color-mix(in srgb, var(--login-surface) 92%, white 8%);
       -webkit-backdrop-filter: blur(20px);
       backdrop-filter: blur(20px);
       border-radius: 24px;
@@ -113,19 +123,19 @@
       padding: 40px 40px 30px;
       text-align: center;
       background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-      border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+      border-bottom: 1px solid color-mix(in srgb, var(--login-primary) 18%, transparent);
     }
 
     .login-logo {
       width: 72px;
       height: 72px;
       margin: 0 auto 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--login-primary) 0%, var(--login-accent) 100%);
       border-radius: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 10px 30px color-mix(in srgb, var(--login-primary) 45%, transparent);
       animation: pulse 2s ease-in-out infinite;
     }
 
@@ -143,13 +153,13 @@
     .login-title {
       font-size: 24px;
       font-weight: 700;
-      color: #1a1a2e;
+      color: var(--login-text);
       margin-bottom: 8px;
     }
 
     .login-subtitle {
       font-size: 14px;
-      color: #64748b;
+      color: var(--login-muted);
       margin: 0;
     }
 
@@ -190,22 +200,59 @@
       -webkit-appearance: none;
       -moz-appearance: none;
       appearance: none;
-      border: 2px solid #e2e8f0;
+      border: 2px solid var(--login-border);
       border-radius: 12px;
       outline: none;
       transition: all 0.3s;
       background: #f8fafc;
     }
 
+    .login-input-password {
+      padding-right: 70px;
+    }
+
     .login-input:focus {
-      border-color: #667eea;
+      border-color: var(--login-primary);
       background: white;
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--login-primary) 20%, transparent);
     }
 
     .login-input:focus + .login-input-icon,
     .login-input:focus ~ .login-input-icon {
-      color: #667eea;
+      color: var(--login-primary);
+    }
+
+    .login-password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      color: #64748b;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+    }
+
+    .login-password-toggle:hover {
+      background: rgba(102, 126, 234, 0.1);
+      color: #4f46e5;
+    }
+
+    .login-password-toggle svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+
+    .login-password-toggle .hidden {
+      display: none;
     }
 
     .login-captcha-row {
@@ -224,7 +271,7 @@
       -webkit-appearance: none;
       -moz-appearance: none;
       appearance: none;
-      border: 2px solid #e2e8f0;
+      border: 2px solid var(--login-border);
       border-radius: 12px;
       outline: none;
       transition: all 0.3s;
@@ -232,9 +279,9 @@
     }
 
     .login-captcha-input:focus {
-      border-color: #667eea;
+      border-color: var(--login-primary);
       background: white;
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--login-primary) 20%, transparent);
     }
 
     .login-captcha-img {
@@ -242,12 +289,12 @@
       width: 140px;
       height: 52px;
       display: block;
-      object-fit: cover;
+      object-fit: fill;
       background: #fff;
       border-radius: 12px;
       cursor: pointer;
       transition: transform 0.2s, box-shadow 0.2s;
-      border: 2px solid #e2e8f0;
+      border: 2px solid var(--login-border);
     }
 
     .login-captcha-img:hover {
@@ -288,12 +335,12 @@
       -moz-appearance: none;
       appearance: none;
       color: white;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--login-primary) 0%, var(--login-accent) 100%);
       border: none;
       border-radius: 12px;
       cursor: pointer;
       transition: all 0.3s;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 4px 15px color-mix(in srgb, var(--login-primary) 45%, transparent);
       margin-top: 4px;
     }
 
@@ -320,7 +367,7 @@
 
     .login-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+      box-shadow: 0 8px 25px color-mix(in srgb, var(--login-primary) 55%, transparent);
     }
 
     .login-btn:active {
@@ -335,8 +382,8 @@
     .login-footer {
       text-align: center;
       padding: 20px 40px;
-      border-top: 1px solid rgba(102, 126, 234, 0.1);
-      background: rgba(102, 126, 234, 0.03);
+      border-top: 1px solid color-mix(in srgb, var(--login-primary) 18%, transparent);
+      background: color-mix(in srgb, var(--login-primary) 8%, transparent);
     }
 
     .login-footer-text {
@@ -405,19 +452,28 @@
             </span>
           </div>
           <div class="login-input-group">
-            <input id="password" class="login-input" placeholder="请输入密码" type="password" autocomplete="current-password" />
+            <input id="password" class="login-input login-input-password" placeholder="请输入密码" type="password" autocomplete="current-password" />
             <span class="login-input-icon">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
               </svg>
             </span>
+            <button id="toggle-password" class="login-password-toggle" type="button" aria-label="显示密码">
+              <svg id="icon-eye-open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.27 2.943 9.542 7-1.273 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg id="icon-eye-closed" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.58 10.58a2 2 0 102.83 2.83M9.88 5.09A9.953 9.953 0 0112 5c4.478 0 8.27 2.943 9.542 7a9.97 9.97 0 01-4.042 5.058M6.228 6.228A9.956 9.956 0 002.458 12c1.274 4.057 5.065 7 9.542 7a9.95 9.95 0 005.772-1.772" />
+              </svg>
+            </button>
           </div>
           <div class="login-captcha-row">
             <input id="captcha-code" class="login-captcha-input" placeholder="验证码" />
             <img id="captcha-image" class="login-captcha-img" alt="captcha" title="点击刷新验证码" />
           </div>
           <div id="login-error" class="login-error"></div>
-          <button id="btn-login" class="login-btn">登 录</button>
+          <button id="btn-login" class="login-btn" type="button" disabled>登 录</button>
         </div>
       </div>
       <div class="login-footer">
@@ -427,6 +483,13 @@
   </div>
 
   <script>
+    try {
+      const savedTheme = localStorage.getItem("admin_theme");
+      if (savedTheme === "dark" || savedTheme === "light") {
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      }
+    } catch (_e) {}
+
     let captchaId = "";
     let submitting = false;
 
@@ -451,16 +514,38 @@
     }
 
     async function refreshCaptcha() {
+      const btn = document.getElementById("btn-login");
+      captchaId = "";
+      if (btn) btn.disabled = true;
       try {
-        const resp = await fetch("/api/admin/auth/captcha");
+        const resp = await fetch("/api/admin/auth/captcha", { cache: "no-store" });
         const data = await resp.json();
         captchaId = data.captcha_id || "";
         document.getElementById("captcha-image").src = data.image || "";
+        document.getElementById("captcha-code").value = "";
+        if (btn) btn.disabled = !captchaId;
       } catch (_e) {
         showError("验证码加载失败，请点击验证码重试");
+        if (btn) btn.disabled = true;
       }
     }
     document.getElementById("captcha-image").addEventListener("click", refreshCaptcha);
+    const passwordInput = document.getElementById("password");
+    const togglePasswordBtn = document.getElementById("toggle-password");
+    const eyeOpenIcon = document.getElementById("icon-eye-open");
+    const eyeClosedIcon = document.getElementById("icon-eye-closed");
+    if (passwordInput && togglePasswordBtn) {
+      togglePasswordBtn.addEventListener("click", () => {
+        const showing = passwordInput.type === "text";
+        passwordInput.type = showing ? "password" : "text";
+        if (eyeOpenIcon && eyeClosedIcon) {
+          eyeOpenIcon.classList.toggle("hidden", !showing);
+          eyeClosedIcon.classList.toggle("hidden", showing);
+        }
+        togglePasswordBtn.setAttribute("aria-label", showing ? "显示密码" : "隐藏密码");
+      });
+    }
+
     async function submitLogin() {
       if (submitting) return;
       clearError();
@@ -469,6 +554,10 @@
       const captchaCode = document.getElementById("captcha-code").value.trim();
       if (!username || !password || !captchaCode) {
         showError("请完整填写用户名、密码和验证码");
+        return;
+      }
+      if (!captchaId) {
+        showError("验证码仍在加载，请稍候或点击验证码图片刷新");
         return;
       }
 
@@ -508,7 +597,9 @@
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") submitLogin();
     });
-    refreshCaptcha();
+    (async () => {
+      await refreshCaptcha();
+    })();
   </script>
 </body>
 </html>

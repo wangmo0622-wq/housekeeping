@@ -17,15 +17,22 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.http import FileResponse
 from django.shortcuts import render
+from django.views.static import serve as static_serve
 import os
 
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
+from admin_portal.views_web import AdminPortalLoginView
+from accounts.views_web import (
+    OrganizationPortalHomeView,
+    OrganizationPortalPrivacyView,
+    OrganizationPortalTermsView,
+)
 from config.health import HealthCheckView
 
 def page_not_found(request, exception=None):
@@ -52,7 +59,14 @@ def serve_favicon(request):
     return FileResponse(open(favicon_path, 'rb'), content_type='image/x-icon')
 
 urlpatterns = [
+    path("", OrganizationPortalHomeView.as_view(), name="portal_home"),
+    path("terms/", OrganizationPortalTermsView.as_view(), name="portal_terms"),
+    path("privacy/", OrganizationPortalPrivacyView.as_view(), name="portal_privacy"),
     path('health/', HealthCheckView.as_view(), name='health'),
+    # 机构前台门户（与管理端分离）
+    path('org/', include('accounts.web_urls')),
+    # 新登录入口：/login
+    path('login/', AdminPortalLoginView.as_view(), name='portal_login'),
     # 自定义管理后台（Admin Plus 风格）
     path('admin/', include('admin_portal.web_urls')),
     # Public / App / Admin APIs
@@ -72,3 +86,8 @@ if settings.ENABLE_API_DOCS:
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # Docker 直连 Gunicorn 场景下（无 Nginx），允许直接访问上传媒体文件。
+    urlpatterns += [
+        re_path(r"^media/(?P<path>.*)$", static_serve, {"document_root": settings.MEDIA_ROOT}),
+    ]

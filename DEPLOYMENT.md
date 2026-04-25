@@ -49,8 +49,7 @@ DEBUG=True
 SECRET_KEY=your-secret-key-here
 ALLOWED_HOSTS=localhost,127.0.0.1
 
-# 数据库配置（使用 SQLite）
-# DATABASE_URL=sqlite:///db.sqlite3
+# 数据库：PostgreSQL（与根目录 .env 中 POSTGRES_* 一致，见 docker-compose.yml）
 
 # 其他配置
 TIME_ZONE=Asia/Shanghai

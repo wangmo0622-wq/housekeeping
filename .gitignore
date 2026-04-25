@@ -32,6 +32,8 @@ ENV/
 *.sqlite3
 *.db
 db.sqlite3
+# 本机 pg_dump 备份（含业务数据，勿提交）
+backend/backups/
 
 # Django
 *.log
